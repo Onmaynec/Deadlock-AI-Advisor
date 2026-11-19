@@ -1,0 +1,16 @@
+{
+  "name": "deadlock-ai-advisor",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Native Deadlock Panorama HUD mod with an offline, explainable item recommendation engine.",
+  "license": "MIT",
+  "engines": {"node": ">=22.2.0"},
+  "scripts": {
+    "sync": "node tools/sync-data.cjs",
+    "build": "node tools/build.cjs",
+    "install-mod": "node tools/build.cjs --install",
+    "uninstall-mod": "node tools/build.cjs --uninstall",
+    "test": "node --test",
+    "check": "node --check src/advisor-core.js && node --check src/panorama/advisor.js && node --check tools/build.cjs && node --check tools/sync-data.cjs && node --test"
+  }
+}
