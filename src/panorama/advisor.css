@@ -1,0 +1,42 @@
+/* Panorama CSS, not browser CSS. No unsupported sibling selectors or DOM layout. */
+.DAAWindow {
+  width: 445px;
+  max-height: 740px;
+  flow-children: down;
+  position: 36px 180px 0px;
+  padding: 14px 16px;
+  background-color: #101822f0;
+  border: 1px solid #446175;
+  border-radius: 8px;
+  opacity: 0;
+  visibility: collapse;
+  box-shadow: #00000088 0px 3px 16px 0px;
+}
+.DAAWindow.DAAOpen { opacity: 1; visibility: visible; }
+.DAAHeader { width: 100%; height: 34px; flow-children: right; margin-bottom: 6px; }
+.DAATitle { color: #e9d7b3; font-size: 18px; font-weight: bold; vertical-align: center; width: fill-parent-flow(1.0); }
+.DAAClose { width: 26px; height: 26px; background-color: #58383b; horizontal-align: right; }
+.DAAClose Label { width: 100%; text-align: center; color: #ffffff; font-size: 20px; }
+.DAARow { width: 100%; flow-children: right; margin-bottom: 8px; }
+.DAAHero { color: #e9e9e9; font-size: 17px; margin-bottom: 6px; }
+.DAABudget { color: #d6b96a; font-size: 16px; margin-top: 4px; margin-bottom: 5px; }
+.DAAButton { padding: 4px 9px; background-color: #26394d; margin-right: 6px; border-radius: 3px; }
+.DAAButton:hover { background-color: #355776; }
+.DAAButtonLabel { color: #e4eef4; font-size: 13px; vertical-align: center; }
+.DAASection { font-size: 12px; font-weight: bold; color: #89bbcf; margin-top: 8px; margin-bottom: 6px; }
+.DAAThreats { width: 100%; flow-children: right; margin-bottom: 10px; }
+.DAAThreat { background-color: #223040; padding: 5px; margin-right: 5px; border: 1px solid #42556b; }
+.DAAThreat.DAAThreatOn { background-color: #42716c; border: 1px solid #7fd3b5; }
+.DAAThreat Label { color: #d6e5f0; font-size: 13px; }
+.DAAResults { flow-children: down; width: 100%; max-height: 420px; overflow: squish scroll; }
+.DAAItem { width: 100%; flow-children: down; padding: 8px; margin-bottom: 6px; background-color: #1a2a36; border-radius: 5px; }
+.DAAItemHeader { flow-children: right; width: 100%; }
+.DAAItemTitle { width: fill-parent-flow(1.0); color: #f1ecd8; font-size: 16px; font-weight: bold; }
+.DAAPrice { color: #bce2ab; font-size: 13px; horizontal-align: right; }
+.DAACostly { color: #e5b783; }
+.DAAItemReason { color: #b6c1cc; font-size: 12px; white-space: normal; margin-top: 5px; }
+.DAAMark { background-color: #37566d; padding: 3px 8px; margin-top: 6px; horizontal-align: left; }
+.DAAMark:hover { background-color: #4a7a85; }
+.DAAMark Label { color: #ffffff; font-size: 12px; }
+.DAAFooter { font-size: 11px; color: #b5a9a1; margin-top: 8px; }
+.DAAEmpty { color: #e5b783; font-size: 14px; }
