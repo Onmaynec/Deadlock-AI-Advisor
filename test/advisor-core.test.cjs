@@ -45,3 +45,15 @@ test('deterministic ordering', () => {
   const state = {souls: 3000, threats: {bullets: true}};
   assert.deepEqual(core.recommend(catalog, state), core.recommend(catalog, state));
 });
+
+test('hero-specific public purchase priors change candidate order', () => {
+  const withPriors = {items:catalog.items, heroStats:{
+    '15':{'1':2000,'4':100},
+    '16':{'4':2000,'1':100}
+  }};
+  const a = core.recommend(withPriors,{heroId:15,souls:2000},4);
+  const b = core.recommend(withPriors,{heroId:16,souls:2000},4);
+  assert.equal(a[0].id,'1');
+  assert.equal(b[0].id,'4');
+  assert.match(a[0].reason,/выбранного героя/);
+});

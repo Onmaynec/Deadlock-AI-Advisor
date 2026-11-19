@@ -49,6 +49,12 @@ var DAA = (function () {
     (state.owned || []).forEach(function (id) { owned[String(id)] = true; });
     var threats = state.threats || {};
     var ownedSlots = {weapon: 0, spirit: 0, vitality: 0};
+    var heroId = String(state.heroId == null ? '' : state.heroId);
+    var heroStats = (catalog && catalog.heroStats && catalog.heroStats[heroId]) || {};
+    var heroMax = 0;
+    Object.keys(heroStats).forEach(function (id) {
+      heroMax = Math.max(heroMax, Number(heroStats[id]) || 0);
+    });
     items.forEach(function (it) { if (owned[it.id]) ownedSlots[it.slot]++; });
     var scored = [];
     items.forEach(function (it) {
@@ -74,6 +80,12 @@ var DAA = (function () {
       var budgetScore = canBuy ? (ratio <= 1 && ratio >= 0.35 ? 2 : 0) : -5;
       var diversity = Math.max(0, 3 - ownedSlots[it.slot]) * 0.4;
       var score = strength + budgetScore + diversity + Math.min(it.cost / 10000, 0.8);
+      var sample = Number(heroStats[it.id]) || 0;
+      if (sample >= 100 && heroMax > 0) {
+        // Popularity within a hero's purchase dataset; observational, not causal win-rate.
+        score += 2 + 4 * Math.sqrt(sample / heroMax);
+        why.push('Встречается в матчах за выбранного героя (' + sample + ' покупок в выборке)');
+      }
       if (!why.length) why.push('Базовый кандидат; требуется проверка синергии с героем');
       if (!canBuy) why.push('Недостаёт ' + (it.cost - available) + ' душ');
       scored.push({id: it.id, name: it.name, cost: it.cost, slot: it.slot,

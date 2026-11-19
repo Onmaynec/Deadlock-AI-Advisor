@@ -76,10 +76,15 @@
   }
   function refresh() {
     var selected = currentHero(), options = DAA.recommend(DAA_CATALOG,
-      {souls: model.souls, owned: model.owned, threats: model.threats}, 5);
+      {heroId: selected ? selected.id : '', souls: model.souls, owned: model.owned, threats: model.threats}, 5);
     setText(hero, selected ? 'Герой: ' + selected.name + (model.manualHero ? ' (вручную)' : '') : 'Герой: не определён');
     setText(budget, 'Души: ' + model.souls + ' (ручной ввод)');
-    setText(status, selected ? 'Советы предварительные: без телеметрии матча' : 'Выберите героя или откройте магазин');
+    var hasStats = selected && DAA_CATALOG.heroStats &&
+      DAA_CATALOG.heroStats[String(selected.id)];
+    setText(status, selected ? (hasStats ?
+      'Основа: статистика покупок героя + ручные угрозы' :
+      'Базовые советы: статистика героя недоступна') :
+      'Выберите героя или откройте магазин');
     clear(resultList);
     if (!options.length) {
       el('Label', resultList, 'DAAEmpty', 'Предметы не загружены. Запустите npm run sync.');

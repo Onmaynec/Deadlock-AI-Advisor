@@ -9,7 +9,7 @@
 - In-game HUD panel that can open with the in-game shop or the backslash key.
 - Hero detection from visible HUD classes, with manual hero selection fallback.
 - Item and hero catalog from Deadlock API at build time (no paid runtime API).
-- Recommendations updated when the player manually changes budget, owned items or enemy threat flags.
+- Hero-specific purchase popularity from the public item-stats API (when available); recommendations update when budget, marked owned items or enemy threat flags change.
 - Explainable counter hints for healing, control, gun damage and spirit damage.
 - VPK compiler with collision-resistant installer/uninstaller; Node unit tests.
 - No additional window or companion app while playing.
@@ -38,12 +38,13 @@ To build without installation: run **npm run build** (output: **out/pak88_dir.vp
 
 The rules engine only considers real shopable items from the API snapshot, filters items marked as bought, considers manual counter-threat signals and flags purchases that cost more than the currently entered budget. It is deterministic and explainable.
 
-It is **not a neural network**. There is no validated live AI-to-Panorama network integration, and no hero-specific build scoring yet. Identifying the current hero only labels the panel. Results are preliminary candidates, not verified optimal builds.
+It is **not a neural network**. There is no validated live AI-to-Panorama network integration. If the optional hero-level analytics request succeeds during sync, selected heroes affect item ranking using their observed purchase counts; this is not causal evidence of optimal builds. Results are preliminary candidates, not verified optimal builds.
 
 ## Known limitations
 
 - Local hero detection relies on game UI class names and may break in a patch.
 - Soul count, owned items, enemy heroes and enemy purchased items are not read automatically.
+- Hero priors are historical purchase frequencies, not item win rates or per-enemy live advice. Optional analytics failures fall back gracefully.
 - No free LLM is called at runtime. Panorama has no verified general HTTP API in this HUD context and API keys should never be embedded into a public VPK.
 - This environment cannot launch Deadlock. Node tests are not a substitute for testing a compiled VPK in a real game session.
 - HUD layout resources conflict with mods that also replace **panorama/layout/hud.vxml_c**. Rebuild after patches.
