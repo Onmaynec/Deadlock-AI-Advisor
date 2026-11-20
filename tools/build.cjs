@@ -98,6 +98,7 @@ async function main() {
   const settings = {autoShowShop:cfg.autoShowShop,hotkey:cfg.hotkey};
   const script = fs.readFileSync(dataFile,'utf8') + '\nvar DAA_SETTINGS = ' +
     JSON.stringify(settings) + ';\n' + fs.readFileSync(path.join(ROOT,'src/advisor-core.js'),'utf8') +
+    '\n' + fs.readFileSync(path.join(ROOT,'src/telemetry.js'),'utf8') +
     '\n' + fs.readFileSync(path.join(ROOT,'src/panorama/advisor.js'),'utf8');
   const files = [
     {path:'panorama/layout/hud.vxml_c',data:compileXml(injectHud(await stockHud(game),scriptPath),

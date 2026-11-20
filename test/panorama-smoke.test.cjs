@@ -37,11 +37,15 @@ function descendants(p) {return [p,...p.children.flatMap(descendants)];}
 test('real Panorama script creates a native panel and all controls without a browser',()=>{
   const root = new Panel('Panel',null,'Hud');
   const bindings={};
+  const scheduled=[];
+  const currentGold = new Panel('Panel',root,'CurrentGoldAmount');
+  const goldLabel = new Panel('Label',currentGold,'hudCurGoldLabel');
+  goldLabel.text='2,400';
   const $={
     GetContextPanel:()=>root,
     CreatePanel:(type,parent,id)=>new Panel(type,parent,id),
     RegisterKeyBind:(_panel,key,fn)=>{bindings[key]=fn;},
-    Schedule:()=>{},
+    Schedule:(_delay,fn)=>{scheduled.push(fn);},
     Msg:()=>{}
   };
   const context=vm.createContext({
@@ -56,11 +60,14 @@ test('real Panorama script creates a native panel and all controls without a bro
     DAA_SETTINGS:{autoShowShop:true,hotkey:'key_backslash'}
   });
   const core=fs.readFileSync(path.join(__dirname,'..','src','advisor-core.js'),'utf8');
+  const telemetry=fs.readFileSync(path.join(__dirname,'..','src','telemetry.js'),'utf8');
   const hud=fs.readFileSync(path.join(__dirname,'..','src','panorama','advisor.js'),'utf8');
-  vm.runInContext(core+'\n'+hud,context,{timeout:2000});
+  vm.runInContext(core+'\n'+telemetry+'\n'+hud,context,{timeout:2000});
   const widget=root.FindChildTraverse('DeadlockAIAdvisorRoot');
   assert.ok(widget,'HUD widget exists');
   assert.equal(widget.BHasClass('DAAOpen'),false);
+  scheduled.shift()(); // gold observation 1
+  scheduled.shift()(); // gold observation 2
   bindings.key_backslash();
   assert.equal(widget.BHasClass('DAAOpen'),true);
   function press(label) {
@@ -71,8 +78,13 @@ test('real Panorama script creates a native panel and all controls without a bro
   }
   press('Лечение');
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('восстановления здоровья')));
+  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('2400')&&p.text.includes('[HUD]')));
   press('+500');
-  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('3500')));
+  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('2900')&&p.text.includes('[вручную]')));
+  press('Вернуть авто');
+  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('2400')&&p.text.includes('[HUD]')));
+  press('Диагностика HUD');
+  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('золото есть')));
   press('Отметить купленным');
-  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('РЕКОМЕНДУЕМЫЕ')));
+  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('СЛЕДУЮЩИЕ ПОКУПКИ')));
 });
