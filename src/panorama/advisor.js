@@ -234,11 +234,15 @@
         model.planPins = model.planPins.filter(function(id) {return id!==it.id;});
         render();
       });
-      button(actions,it.pinned ? 'Убрать из плана' : 'В план','DAAButton',function() {
-        if (it.pinned) model.planPins=model.planPins.filter(function(id){return id!==it.id;});
-        else if (model.planPins.length < 5) model.planPins.push(it.id);
-        render();
-      });
+      if (it.pinned || model.planPins.length < 5) {
+        button(actions,it.pinned ? 'Убрать из плана' : 'В план','DAAButton',function() {
+          if (it.pinned) model.planPins=model.planPins.filter(function(id){return id!==it.id;});
+          else model.planPins.push(it.id);
+          render();
+        });
+      } else {
+        el('Label', actions, 'DAAEvidence', 'План заполнен (5)');
+      }
     });
     updateDiagnostic();
   }
