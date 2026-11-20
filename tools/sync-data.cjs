@@ -20,10 +20,28 @@ function transform(heroes, items) {
   const itemList = listResponse(items).filter(i => i && Number.isFinite(Number(i.id)) &&
       typeof i.name === 'string' && Number.isFinite(Number(i.cost)) && Number(i.cost) > 0 &&
       ['weapon','vitality','spirit'].includes(String(i.item_slot_type || '').toLowerCase()) &&
-      i.shopable === true).map(i => ({
+      i.shopable === true && i.disabled !== true && Number(i.item_tier) !== 5 &&
+      (i.type === undefined || i.type === 'upgrade')).map(i => ({
         id: Number(i.id), name: i.name, cost: Math.floor(Number(i.cost)),
         slot: i.item_slot_type.toLowerCase(), shopable: true
       }));
+  // component_items is a list of internal class names. Resolve only current shop items.
+  const classToId = new Map();
+  const validIds = new Set(itemList.map(x => x.id));
+  listResponse(items).forEach(i => {
+    if (i && typeof i.class_name === 'string' &&
+        /^[a-z0-9_]{3,100}$/.test(i.class_name) &&
+        validIds.has(Number(i.id))) classToId.set(i.class_name, Number(i.id));
+  });
+  const byId = new Map(itemList.map(i => [i.id, i]));
+  const rawById = new Map(listResponse(items).filter(i => i && Number.isFinite(Number(i.id)))
+    .map(i => [Number(i.id), i]));
+  for (const item of itemList) {
+    const raw = rawById.get(item.id);
+    const components = raw && Array.isArray(raw.component_items) ? raw.component_items.slice(0, 8) : [];
+    item.components = [...new Set(components.map(name => classToId.get(name)).filter(id =>
+      id && id !== item.id && byId.has(id) && byId.get(id).cost < item.cost))];
+  }
   if (!heroList.length || itemList.length < 20) {
     throw new Error('Insufficient metadata: ' + heroList.length + ' heroes, ' + itemList.length +
       ' items. Refusing to produce a misleading build.');

@@ -1,4 +1,4 @@
-/* Deadlock AI Advisor v0.2.0: native, in-game Panorama UI.
+/* Deadlock AI Advisor v0.3.0: native, in-game Panorama UI.
  * Runtime imports DAA, DAA_TELEMETRY and DAA_CATALOG from VPK build.
  * No browser, external overlay, DLL, process memory reading or hidden-game-data access.
  */
@@ -14,9 +14,12 @@
     heroLostAt: -1, seconds: 0,
     soulsMode: 'auto', manualSouls: null, evidence: null,
     threats: {healing:false, control:false, bullets:false, spirit:false},
-    owned: [], last:'', shopOpen:false, debug:false
+    owned: [], pinned: [], enemyHeroIds: [], slots: 9,
+    pickerOpen: false, pickerPage: 0, lastPurchase: null,
+    last:'', shopOpen:false, debug:false
   };
   var widget, hero, budget, status, threatRow, resultList, evidenceLabel, debugLabel, modeButton;
+  var roster, rosterPicker, plannerStatus, slotButton, inventoryRow;
 
   function valid(p) { try { return !!(p && p.IsValid && p.IsValid()); } catch (e) {return false;} }
   function find(id) { try {return hud.FindChildTraverse(id);} catch (e) {return null;} }
@@ -49,6 +52,12 @@
     // Never reuse manually marked enemy threats or "purchased" items for another hero.
     model.threats = {healing:false,control:false,bullets:false,spirit:false};
     model.owned = [];
+    model.pinned = [];
+    model.enemyHeroIds = [];
+    model.pickerOpen = false;
+    model.pickerPage = 0;
+    model.slots = 9;
+    model.lastPurchase = null;
     model.manualSouls = null;
     model.soulsMode = 'auto';
     tracker.reset();
@@ -88,6 +97,11 @@
         resetAnnotations();
       }
     }
+  }
+  function heroById(id) {
+    for (var i=0;i<heroes.length;i++)
+      if(String(heroes[i].id)===String(id)) return heroes[i];
+    return null;
   }
   function currentHero() {
     var id = model.manualHero || model.heroId;
@@ -172,10 +186,19 @@
   function refresh() {
     var selected = currentHero();
     var budgetNow = budgetState().value;
-    var options = DAA.recommend(DAA_CATALOG, {
+    var plan = DAA.plan(DAA_CATALOG, {
       heroId:selected ? selected.id : '', souls:budgetNow,
-      owned:model.owned, threats:model.threats
-    },5);
+      owned:model.owned, threats:model.threats,
+      pinned:model.pinned, enemyHeroIds:model.enemyHeroIds, slots:model.slots
+    },6);
+    var options = plan.items;
+    text(labelOfButton(slotButton), 'Слоты ' + plan.usedSlots + '/' + plan.slotLimit);
+    text(plannerStatus, 'План: ' + model.pinned.length + ' закреплено · ' +
+      plan.freeSlots + ' свободных слотов · выбор врагов: ' +
+      (model.enemyHeroIds.length ? 'вручную' : 'не задан') +
+      (model.enemyHeroIds.length ? (plan.hasMatchupData ?
+        ' · статистика противников доступна' :
+        ' · статистика противников не загружена') : ''));
     text(hero, selected ? 'Герой: ' + selected.name +
       (model.manualHero ? ' (выбран вручную)' : ' (HUD)') : 'Герой: не определён');
     displayBudget();
@@ -185,7 +208,9 @@
       (heroStats ? ' · статистика героя: да' : ' · статистика героя: нет'));
     clear(resultList);
     if (!options.length) {
-      el('Label',resultList,'DAAEmpty','Нет актуальных предметов в каталоге.');
+      el('Label',resultList,'DAAEmpty',plan.freeSlots === 0 ?
+        'Все слоты заняты. Отметьте улучшение или освободите слот.' :
+        'Нет актуальных предметов в каталоге.');
       return;
     }
     options.forEach(function(it,index) {
@@ -193,19 +218,99 @@
       var line=el('Panel',row,'DAAItemHeader');
       el('Label',line,'DAAItemTitle',(index+1)+'. '+it.name);
       el('Label',line,it.affordable===true ? 'DAAPrice' : 'DAAPrice DAACostly',
-        String(it.cost)+(it.affordable===true ? ' · доступно' :
-          it.affordable===null ? ' · ?' : ' · накопить'));
+        String(it.cost) +
+          (it.componentId ? ' (доплата, полная ' + it.fullCost + ')' : '') +
+          (it.affordable===true ? ' · доступно' :
+           it.affordable===null ? ' · ?' : ' · накопить'));
       el('Label',row,'DAAItemReason',it.reason);
-      button(row,'Отметить купленным','DAAMark',function() {
-        if (model.owned.indexOf(it.id)<0) model.owned.push(it.id);
+      var actions = el('Panel',row,'DAARow');
+      button(actions,'Куплено','DAAMark',function() {
+        if (model.owned.indexOf(it.id)>=0) return;
+        var component = it.componentId;
+        if (component && model.owned.indexOf(component)>=0)
+          model.owned.splice(model.owned.indexOf(component),1);
+        model.owned.push(it.id);
+        model.lastPurchase = {id:it.id, componentId:component};
+        model.pinned = model.pinned.filter(function(id) {return id!==it.id;});
+        render();
+      });
+      button(actions,it.pinned ? 'Убрать из плана' : 'В план','DAAButton',function() {
+        if (it.pinned) model.pinned=model.pinned.filter(function(id){return id!==it.id;});
+        else if (model.pinned.length < 5) model.pinned.push(it.id);
         render();
       });
     });
     updateDiagnostic();
   }
+  function displayInventory() {
+    clear(inventoryRow);
+    if(!model.owned.length) {
+      el('Label',inventoryRow,'DAAEvidence','Покупки не отмечены');
+      return;
+    }
+    model.owned.forEach(function(id) {
+      var found = DAA_CATALOG.items.filter(function(x){return String(x.id)===id;})[0];
+      button(inventoryRow,'− '+(found ? found.name : id),'DAAEnemyRemove',function() {
+        model.owned=model.owned.filter(function(v){return v!==id;});
+        model.lastPurchase=null;
+        render();
+      });
+    });
+  }
+  function displayRoster() {
+    clear(roster);
+    var own = currentHero();
+    var enemyNames = [];
+    model.enemyHeroIds.forEach(function(id) {
+      var match=heroById(id);
+      if(match) enemyNames.push(match.name);
+    });
+    el('Label',roster,'DAAEvidence','Враги: ' +
+      (enemyNames.length ? enemyNames.join(', ') : 'не выбраны') +
+      ' ('+enemyNames.length+'/6)');
+    var controls=el('Panel',roster,'DAARow');
+    button(controls,model.pickerOpen ? 'Закрыть выбор' : 'Выбрать врагов',
+      'DAAButton',function() {model.pickerOpen=!model.pickerOpen;render();});
+    if(model.enemyHeroIds.length)
+      button(controls,'Очистить врагов','DAAButton',function() {
+        model.enemyHeroIds=[];render();
+      });
+    clear(rosterPicker);
+    if (!model.pickerOpen) return;
+    var choices = heroes.filter(function(h) {
+      return (!own || String(own.id)!==String(h.id)) &&
+        model.enemyHeroIds.indexOf(String(h.id))<0;
+    });
+    var pages = Math.max(1,Math.ceil(choices.length/6));
+    model.pickerPage = Math.min(model.pickerPage,pages-1);
+    var pagesRow=el('Panel',rosterPicker,'DAARow');
+    button(pagesRow,'◀','DAAButton',function(){
+      model.pickerPage=(model.pickerPage+pages-1)%pages;render();
+    });
+    el('Label',pagesRow,'DAAEvidence','Страница '+(model.pickerPage+1)+'/'+pages);
+    button(pagesRow,'▶','DAAButton',function(){
+      model.pickerPage=(model.pickerPage+1)%pages;render();
+    });
+    choices.slice(model.pickerPage*6,model.pickerPage*6+6).forEach(function(h){
+      button(rosterPicker,'+ '+h.name,'DAAHeroChoice',function(){
+        if(model.enemyHeroIds.length>=6) return;
+        model.enemyHeroIds.push(String(h.id));
+        render();
+      });
+    });
+    model.enemyHeroIds.forEach(function(id) {
+      var selected = heroById(id);
+      if(selected) button(rosterPicker,'− '+selected.name,'DAAEnemyRemove',function(){
+        model.enemyHeroIds=model.enemyHeroIds.filter(function(v){return v!==id;});
+        render();
+      });
+    });
+  }
   function render() {
     if(!valid(widget)) return;
     refresh();
+    displayInventory();
+    displayRoster();
     clear(threatRow);
     [
       ['healing','Лечение'],['control','Контроль'],
@@ -225,7 +330,7 @@
     widget=$.CreatePanel('Panel',hud,'DeadlockAIAdvisorRoot');
     widget.AddClass('DAAWindow');
     var head=el('Panel',widget,'DAAHeader');
-    el('Label',head,'DAATitle','DEADLOCK  /  BUILD ADVISOR  0.2');
+    el('Label',head,'DAATitle','DEADLOCK  /  BUILD ADVISOR  0.3');
     button(head,'×','DAAClose',function(){model.pinned=false;setShown(false);});
     hero=el('Label',widget,'DAAHero','');
     var controls=el('Panel',widget,'DAARow');
@@ -237,14 +342,34 @@
     button(moneyRow,'−500','DAAButton',function(){editSouls(-500);});
     button(moneyRow,'+500','DAAButton',function(){editSouls(500);});
     evidenceLabel=el('Label',widget,'DAAEvidence','');
+    el('Label',widget,'DAASection','СОСТАВ ПРОТИВНИКОВ · РУЧНОЙ ВВОД');
+    roster=el('Panel',widget,'DAARoster');
+    rosterPicker=el('Panel',widget,'DAAPicker');
     el('Label',widget,'DAASection','УГРОЗЫ ПРОТИВНИКОВ · РУЧНОЙ ВВОД');
     threatRow=el('Panel',widget,'DAAThreats');
+    var plannerTools=el('Panel',widget,'DAARow');
+    slotButton=button(plannerTools,'Слоты 0/9','DAAButton',function() {
+      model.slots = model.slots===12 ? 9 : model.slots+1;
+      render();
+    });
+    button(plannerTools,'Отменить покупку','DAAButton',function() {
+      if (!model.lastPurchase) return;
+      var last=model.lastPurchase;
+      model.owned=model.owned.filter(function(x){return x!==last.id;});
+      if(last.componentId && model.owned.indexOf(last.componentId)<0)
+        model.owned.push(last.componentId);
+      model.lastPurchase=null;
+      render();
+    });
+    plannerStatus=el('Label',widget,'DAAEvidence','');
+    el('Label',widget,'DAASection','МОИ ПОКУПКИ · РУЧНЫЕ ОТМЕТКИ');
+    inventoryRow=el('Panel',widget,'DAAInventory');
     el('Label',widget,'DAASection','СЛЕДУЮЩИЕ ПОКУПКИ');
     resultList=el('Panel',widget,'DAAResults');
     status=el('Label',widget,'DAAFooter','');
     var footer=el('Panel',widget,'DAARow');
     button(footer,'Новый матч','DAAButton',restartMatch);
-    button(footer,'Сбросить покупки','DAAButton',function(){model.owned=[];render();});
+    button(footer,'Сбросить покупки','DAAButton',function(){model.owned=[];model.lastPurchase=null;render();});
     button(footer,'Диагностика HUD','DAAButton',function(){model.debug=!model.debug;render();});
     debugLabel=el('Label',widget,'DAADebug','');
     setShown(false);
@@ -264,7 +389,8 @@
         var effective=budgetState();
         var stateKey=model.heroId+'/'+model.manualHero+'/'+
           model.soulsMode+'/'+String(effective.value)+'/'+effective.status+'/' +
-          model.owned.join(',')+'/'+JSON.stringify(model.threats)+'/'+model.debug;
+          model.owned.join(',')+'/'+JSON.stringify(model.threats)+'/'+model.debug+'/'+
+          model.pinned.join(',')+'/'+model.enemyHeroIds.join(',')+'/'+model.slots;
         if(stateKey!==model.last) {model.last=stateKey;render();}
       }
     } catch(e) {
@@ -279,6 +405,6 @@
     try {$.RegisterKeyBind(hud,DAA_SETTINGS.hotkey||'key_backslash',toggle);}
     catch(e2) {$.Msg('[DAA] keybind unavailable: '+e2);}
   }
-  $.Msg('[DAA] Panorama v0.2.0 loaded; read-only currency HUD probe active');
+  $.Msg('[DAA] Panorama v0.3.0 loaded; offline matchup planner and HUD currency probe active');
   $.Schedule(0.5,update);
 })();
