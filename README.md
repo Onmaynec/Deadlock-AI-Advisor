@@ -2,7 +2,7 @@
 
 **Native Panorama HUD mod for Deadlock.** The player sees and controls the panel **inside the game**, not in an external window. The distributable is a Source 2 VPK: no DLL injection, process-memory reading or shop automation.
 
-**Status: v0.2.0 / experimental.** The native UI and offline recommendation engine are implemented in source. Live neural inference, automated inventory/enemy-item tracking and end-to-end game verification are NOT implemented. A scoped read-only HUD currency adapter now exists, but its in-game numeric behavior remains unverified. Do not treat this build as a finished AI assistant.
+**Status: v0.3.0 / experimental.** The native UI and offline recommendation engine are implemented in source. Live neural inference, automated inventory/enemy-item tracking and end-to-end game verification are NOT implemented. A scoped read-only HUD currency adapter now exists, but its in-game numeric behavior remains unverified. Do not treat this build as a finished AI assistant.
 
 ## Implemented
 
@@ -13,6 +13,10 @@
 - Hero-specific purchase popularity from the public item-stats API (when available); recommendations update when budget, marked owned items or enemy threat flags change.
 - Explainable counter hints for healing, control, gun damage and spirit damage.
 - Per-match manual annotation reset, in-game diagnostics of known HUD container presence, and explicit unknown-affordability handling.
+- **Matchup Build Planner:** manually select up to six enemy heroes, pin purchase priorities, track owned items and undo annotations inside the game.
+- **Universal inventory slots:** manual 9–12 available slots, no new independent item when full; a verified upgrade can consume a component instead.
+- **Verified upgrade components:** uses current API component relationships and calculates the difference in souls instead of always charging the full price.
+- **Optional offline matchup snapshot:** API historical purchased items when facing selected enemy heroes, precomputed before compiling the VPK.
 - VPK compiler with collision-resistant installer/uninstaller; Node unit tests.
 - No additional window or companion app while playing.
 
@@ -22,7 +26,7 @@ Requires **Node.js 22.2+**, Deadlock installed through Steam, Internet access fo
 
 Clone the repository at https://github.com/Onmaynec/Deadlock-AI-Advisor.git. Copy **config.example.json** to **config.json**. If Steam auto-discovery fails, set **gamePath** to the Deadlock install folder containing the game directory. Change **pakNumber** if pak88 is occupied.
 
-From the project root run:
+From the project root run (for an optional matchup-aware snapshot, see the separate guide):
 
 ~~~powershell
 npm run check
@@ -32,13 +36,15 @@ npm run install-mod
 
 The install command builds and places a VPK in **game/citadel/addons/pak88_dir.vpk** (or your configured number). It may add safe search paths to **gameinfo.gi**; the original is backed up at **cache/gameinfo.gi.bak**. It refuses to overwrite another mod's VPK.
 
-Open the game shop or press backslash. The panel is part of the in-game HUD. Enemy threat flags and purchased items are **manual**. Souls can be read from the named HUD label **only if the installed game exposes evaluated numeric text**; otherwise it stays unknown until manually entered. Select another hero if HUD auto-detection fails.
+Open the game shop or press backslash. The panel is part of the in-game HUD. Enemy threat flags, enemy roster and purchased items are **manual**. Souls can be read from the named HUD label **only if the installed game exposes evaluated numeric text**; otherwise it stays unknown until manually entered. Select another hero if HUD auto-detection fails.
+
+**Optional matchup recommendations:** after running **npm run sync**, identify your numeric hero ID in **generated/catalog.json** and run **npm run sync:matchups -- --heroes 15** (replace 15 with your own hero ID). Rebuild and install to include that data in the VPK. See [v0.3.0 Matchup Planner](docs/MATCHUP_PLANNER.md).
 
 To build without installation: run **npm run build** (output: **out/pak88_dir.vpk**). To remove a VPK installed by this tool: run **npm run uninstall-mod**. The installer verifies SHA-256 before deleting. Shared addon search paths remain in gameinfo.gi on uninstall so it does not break other mods; use the backup or Steam verification to restore stock files after removing all mods.
 
 ## What recommendations mean
 
-The rules engine only considers real shopable items from the API snapshot, filters items marked as bought, considers manual counter-threat signals and flags purchases that cost more than a known balance. When currency is unavailable, affordability remains **unknown** rather than assumed zero. It is deterministic and explainable.
+The rules engine only considers real shopable items from the API snapshot, filters items marked as bought, considers manual counter-threat signals and flags purchases that cost more than a known balance. When currency is unavailable, affordability remains **unknown** rather than assumed zero. It is deterministic and explainable. When a verified API component is marked owned, the advisor estimates the upgrade payment as the cost difference. When inventory is full, only valid component upgrades can appear. A user-pinned plan remains prioritized.
 
 It is **not a neural network**. There is no validated live AI-to-Panorama network integration. If the optional hero-level analytics request succeeds during sync, selected heroes affect item ranking using their observed purchase counts; this is not causal evidence of optimal builds. Results are preliminary candidates, not verified optimal builds.
 
@@ -46,7 +52,8 @@ It is **not a neural network**. There is no validated live AI-to-Panorama networ
 
 - Local hero detection relies on game UI class names and may break in a patch.
 - Soul count is probed from a known public HUD label with double-confirmation; real-game evaluation of that label is **unverified**. Owned items, enemy heroes and enemy purchases are still manually tracked or unavailable.
-- Hero priors are historical purchase frequencies, not item win rates or per-enemy live advice. Optional analytics failures fall back gracefully.
+- Hero priors and optional opponent matchup priors are historical purchase frequencies, **not** item win rates or proven counters. Matchup priors are only available for heroes explicitly precomputed during sync. Optional analytics failures fall back gracefully.
+- Enemy hero selection is still manual; no automatic team compositions or enemy inventory are read. Universal inventory slot count is chosen manually and active-item capacity restrictions are not yet verified.
 - No free LLM is called at runtime. Panorama has no verified general HTTP API in this HUD context and API keys should never be embedded into a public VPK.
 - This environment cannot launch Deadlock. Node tests are not a substitute for testing a compiled VPK in a real game session. See [HUD telemetry and the Windows test checklist](docs/HUD_TELEMETRY.md).
 - HUD layout resources conflict with mods that also replace **panorama/layout/hud.vxml_c**. Rebuild after patches.
@@ -59,6 +66,7 @@ Valve has not guaranteed that a third-party HUD which gives competitive advice i
 |---|---|
 | src/advisor-core.js | Dependency-free ranking engine for both Node and Panorama |
 | src/telemetry.js | Fail-closed read-only HUD currency adapter and evidence tracker |
+| tools/sync-matchups.cjs | Optional offline historical item-versus-enemy-hero snapshot |
 | src/panorama/ | In-game widget and native CSS |
 | tools/sync-data.cjs | API metadata import |
 | tools/build.cjs | Native HUD resource compilation, VPK install/uninstall |

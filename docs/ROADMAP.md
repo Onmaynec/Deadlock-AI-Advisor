@@ -31,12 +31,22 @@ A milestone is not complete until its unit tests AND real in-game checks pass.
 
 See docs/HUD_TELEMETRY.md for evidence and test steps.
 
-## v0.3.0 — Competitive builds
+## v0.3.0 — Matchup Build Planner (experimental)
 
-- [ ] Per-hero statistical build priors from public analytics
-- [ ] Versioned and reviewed item counter relationships
-- [ ] Synergy, build completion, item slots and affordability
-- [ ] Stable plan that doesn't oscillate between successive updates
+- [x] Manual enemy hero picker in native HUD, up to six opponents
+- [x] Deterministic pinned next-purchase priority and manual inventory list
+- [x] Buy mark, undo last mark, remove owned mark, match reset
+- [x] Manual universal slot capacity 9–12 and full-inventory restrictions
+- [x] Verified component upgrades from API catalog with discounted effective cost
+- [x] Optional build-time enemy_hero historical item stats, strictly validated and bounded
+- [x] Source/availability disclaimers for missing matchup data
+- [x] CI tests for upgrade paths, inventory capacity, enemy priors and Panorama interactions
+- [ ] Real Deadlock VPK compilation and end-to-end test on current Windows client
+- [ ] Automatic team roster, enemy purchases, match ID (not verified)
+- [ ] Enforce 4-active-item restriction after a verified catalog flag is found
+- [ ] Verify item components and actual price against installed game build
+
+See docs/MATCHUP_PLANNER.md and docs/HUD_TELEMETRY.md.
 
 ## v0.4.0 — AI
 

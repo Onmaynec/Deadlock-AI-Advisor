@@ -70,3 +70,56 @@ test('known zero balance still produces exact insufficient-souls amount', () => 
   assert.equal(recs[0].affordable,false);
   assert.ok(recs[0].reason.includes('Недостаёт '+recs[0].cost+' душ'));
 });
+
+test('component upgrade costs only the difference and consumes a mapped owned component', () => {
+  const items=[
+    {id:11,name:'Small Part',slot:'weapon',cost:800,shopable:true},
+    {id:12,name:'Large Upgrade',slot:'weapon',cost:3200,shopable:true,components:[11]}
+  ];
+  const choices=core.recommend({items}, {souls:2400,owned:[11],slots:9});
+  const upgraded=choices.find(x=>x.id==='12');
+  assert.ok(upgraded);
+  assert.equal(upgraded.cost,2400);
+  assert.equal(upgraded.fullCost,3200);
+  assert.equal(upgraded.componentId,'11');
+  assert.equal(upgraded.affordable,true);
+  assert.match(upgraded.reason,/зачтена стоимость компонента/);
+});
+test('a full universal inventory blocks new items but not a valid upgrade',()=>{
+  const items=[];
+  for(let i=1;i<=10;i++) items.push({id:i,name:'Item '+i,slot:'weapon',cost:800,shopable:true});
+  items.push({id:20,name:'Upgrade from Item 1',slot:'spirit',cost:3200,shopable:true,components:[1]});
+  const owned=Array.from({length:9},(_,i)=>i+1);
+  const result=core.plan({items},{souls:10000,slots:9,owned},10);
+  assert.equal(result.freeSlots,0);
+  assert.deepEqual(result.items.map(x=>x.id),['20']);
+  assert.equal(result.items[0].cost,2400);
+  const withSpace=core.plan({items},{souls:10000,slots:10,owned},10);
+  assert.ok(withSpace.items.some(x=>x.id==='10'));
+});
+test('pinned next purchase does not get displaced by new threats',()=>{
+  const a=core.recommend(catalog,{souls:3500,pinned:['4'],threats:{control:true}});
+  assert.equal(a[0].id,'4');
+  assert.equal(a[0].pinned,true);
+  assert.match(a[0].reason,/Закреплено/);
+});
+test('matchup priors affect only explicitly selected enemy heroes',()=>{
+  const sample={items:[
+    {id:1,name:'First',slot:'weapon',cost:800,shopable:true},
+    {id:2,name:'Second',slot:'weapon',cost:800,shopable:true}
+  ],heroMatchups:{'5':{'7':{'1':100,'2':2000}}}};
+  const baseline=core.recommend(sample,{heroId:5,souls:800,enemyHeroIds:[]});
+  const against=core.recommend(sample,{heroId:5,souls:800,enemyHeroIds:[7]});
+  assert.equal(baseline[0].id,'1');
+  assert.equal(against[0].id,'2');
+  assert.match(against[0].reason,/Исторические покупки/);
+  const missing=core.recommend(sample,{heroId:5,souls:800,enemyHeroIds:[8]});
+  assert.equal(missing[0].id,'1');
+  assert.ok(missing.every(x=>!x.reason.includes('Исторические покупки')));
+});
+test('plan keeps budget unknown and clamps user-input slot limits',()=>{
+  const r=core.plan(catalog,{souls:null,slots:100,owned:[1]});
+  assert.equal(r.available,null);
+  assert.equal(r.slotLimit,12);
+  assert.ok(r.items.every(x=>x.affordable===null));
+});

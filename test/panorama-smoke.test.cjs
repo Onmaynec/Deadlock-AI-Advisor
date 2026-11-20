@@ -50,7 +50,8 @@ test('real Panorama script creates a native panel and all controls without a bro
   };
   const context=vm.createContext({
     $, DAA_CATALOG:{
-      heroes:[{id:1,name:'TestHero',className:'hero_testhero'}],
+      heroes:[{id:1,name:'TestHero',className:'hero_testhero'},{id:2,name:'TestEnemy',className:'hero_enemy'}],
+      heroMatchups:{'1':{'2':{'1':500}}},
       items:[
         {id:1,name:'Healbane',slot:'spirit',cost:1200,shopable:true},
         {id:2,name:'Metal Skin',slot:'vitality',cost:3000,shopable:true},
@@ -85,6 +86,19 @@ test('real Panorama script creates a native panel and all controls without a bro
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('2400')&&p.text.includes('[HUD]')));
   press('Диагностика HUD');
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('золото есть')));
-  press('Отметить купленным');
+  press('Выбрать врагов');
+  press('+ TestEnemy');
+  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('TestEnemy')&&p.text.includes('(1/6)')));
+  press('Закрыть выбор');
+  press('В план');
+  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text==='Убрать из плана'));
+  press('Куплено');
+  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('Слоты 1/9')));
+  press('Отменить покупку');
+  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('Слоты 0/9')));
+  press('Слоты 0/9');
+  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('Слоты 0/10')));
+  press('Новый матч');
+  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('Враги: не выбраны')));
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('СЛЕДУЮЩИЕ ПОКУПКИ')));
 });
