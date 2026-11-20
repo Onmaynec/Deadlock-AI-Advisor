@@ -14,7 +14,7 @@
     heroLostAt: -1, seconds: 0,
     soulsMode: 'auto', manualSouls: null, evidence: null,
     threats: {healing:false, control:false, bullets:false, spirit:false},
-    owned: [], pinned: [], enemyHeroIds: [], slots: 9,
+    owned: [], planPins: [], enemyHeroIds: [], slots: 9,
     pickerOpen: false, pickerPage: 0, lastPurchase: null,
     last:'', shopOpen:false, debug:false
   };
@@ -52,7 +52,7 @@
     // Never reuse manually marked enemy threats or "purchased" items for another hero.
     model.threats = {healing:false,control:false,bullets:false,spirit:false};
     model.owned = [];
-    model.pinned = [];
+    model.planPins = [];
     model.enemyHeroIds = [];
     model.pickerOpen = false;
     model.pickerPage = 0;
@@ -189,11 +189,11 @@
     var plan = DAA.plan(DAA_CATALOG, {
       heroId:selected ? selected.id : '', souls:budgetNow,
       owned:model.owned, threats:model.threats,
-      pinned:model.pinned, enemyHeroIds:model.enemyHeroIds, slots:model.slots
+      pinned:model.planPins, enemyHeroIds:model.enemyHeroIds, slots:model.slots
     },6);
     var options = plan.items;
     text(labelOfButton(slotButton), 'Слоты ' + plan.usedSlots + '/' + plan.slotLimit);
-    text(plannerStatus, 'План: ' + model.pinned.length + ' закреплено · ' +
+    text(plannerStatus, 'План: ' + model.planPins.length + ' закреплено · ' +
       plan.freeSlots + ' свободных слотов · выбор врагов: ' +
       (model.enemyHeroIds.length ? 'вручную' : 'не задан') +
       (model.enemyHeroIds.length ? (plan.hasMatchupData ?
@@ -231,12 +231,12 @@
           model.owned.splice(model.owned.indexOf(component),1);
         model.owned.push(it.id);
         model.lastPurchase = {id:it.id, componentId:component};
-        model.pinned = model.pinned.filter(function(id) {return id!==it.id;});
+        model.planPins = model.planPins.filter(function(id) {return id!==it.id;});
         render();
       });
       button(actions,it.pinned ? 'Убрать из плана' : 'В план','DAAButton',function() {
-        if (it.pinned) model.pinned=model.pinned.filter(function(id){return id!==it.id;});
-        else if (model.pinned.length < 5) model.pinned.push(it.id);
+        if (it.pinned) model.planPins=model.planPins.filter(function(id){return id!==it.id;});
+        else if (model.planPins.length < 5) model.planPins.push(it.id);
         render();
       });
     });
@@ -390,7 +390,7 @@
         var stateKey=model.heroId+'/'+model.manualHero+'/'+
           model.soulsMode+'/'+String(effective.value)+'/'+effective.status+'/' +
           model.owned.join(',')+'/'+JSON.stringify(model.threats)+'/'+model.debug+'/'+
-          model.pinned.join(',')+'/'+model.enemyHeroIds.join(',')+'/'+model.slots;
+          model.planPins.join(',')+'/'+model.enemyHeroIds.join(',')+'/'+model.slots;
         if(stateKey!==model.last) {model.last=stateKey;render();}
       }
     } catch(e) {
