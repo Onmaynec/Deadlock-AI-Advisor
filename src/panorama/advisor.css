@@ -40,3 +40,7 @@
 .DAAMark Label { color: #ffffff; font-size: 12px; }
 .DAAFooter { font-size: 11px; color: #b5a9a1; margin-top: 8px; }
 .DAAEmpty { color: #e5b783; font-size: 14px; }
+
+/* v0.2.0: HUD evidence and diagnostic labels */
+.DAAEvidence { font-size: 12px; color: #8ebcc2; margin-bottom: 4px; white-space: normal; }
+.DAADebug { font-size: 12px; color: #d8ae84; white-space: normal; margin-bottom: 4px; }

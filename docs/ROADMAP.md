@@ -14,14 +14,22 @@ A milestone is not complete until its unit tests AND real in-game checks pass.
 - [ ] Test the compiled script in an actual game session
 - [ ] Test shop auto-open, keybind and class-based hero detection in current patch
 
-## v0.2.0 — Trustworthy match data
+## v0.2.0 — Scoped HUD Telemetry (experimental)
 
-- [ ] Identify verified HUD fields for player souls, owned items and team roster
-- [ ] Add read-only adapters for publicly exposed in-game UI state
-- [ ] Display confidence, source and age for each field; fail closed on missing data
-- [ ] Validate matching the correct player to purchases in live event feeds
-- [ ] Never assume spectator streams offer zero-delay private match data
-- [ ] Keep manual fallback for unreliable telemetry
+- [x] Investigate public HUD XML for the player's visible currency label
+- [x] Implement scoped read-only currency probe avoiding duplicated label IDs
+- [x] Double-confirm readings, invalidate changed/missing/unreadable data
+- [x] Expose HUD/manual/unknown status and evidence provenance in the in-game panel
+- [x] Reject unknown affordability in the core engine instead of assuming zero
+- [x] Reset tracked manual items and threats when changing heroes, or via New Match
+- [x] Add optional in-game diagnostics of selected HUD container existence
+- [x] Unit tests and Panorama emulation smoke tests
+- [ ] Verify numeric label read and update in real Deadlock client
+- [ ] Build/install/rollback VPK from Windows running latest game patch
+- [ ] Identify and validate own inventory, squad/enemy roster sources
+- [ ] Validate item acquisition and match identity with permitted data sources
+
+See docs/HUD_TELEMETRY.md for evidence and test steps.
 
 ## v0.3.0 — Competitive builds
 

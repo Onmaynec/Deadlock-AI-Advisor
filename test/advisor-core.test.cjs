@@ -57,3 +57,16 @@ test('hero-specific public purchase priors change candidate order', () => {
   assert.equal(b[0].id,'4');
   assert.match(a[0].reason,/выбранного героя/);
 });
+
+test('unknown balance never produces a fake affordability claim', () => {
+  const recs = core.recommend(catalog, {souls: null, threats:{control:true}});
+  assert.ok(recs.length);
+  assert.ok(recs.every(x => x.affordable === null));
+  assert.ok(recs.every(x => x.reason.includes('Баланс неизвестен')));
+  assert.ok(recs.every(x => !x.reason.includes('Недостаёт')));
+});
+test('known zero balance still produces exact insufficient-souls amount', () => {
+  const recs = core.recommend(catalog, {souls:0, threats:{healing:true}});
+  assert.equal(recs[0].affordable,false);
+  assert.ok(recs[0].reason.includes('Недостаёт '+recs[0].cost+' душ'));
+});
