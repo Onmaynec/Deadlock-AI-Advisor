@@ -42,8 +42,9 @@ test('reads scoped current currency label, not the duplicated item-value label',
 test('two consistent readings establish budget confidence',()=>{
   const h=hudWithCurrency('3,500');
   const t=createTracker();
-  assert.equal(t.observe(h.root,0).status,'confirming');
-  assert.equal(t.observe(h.root,0).value,null);
+  const first = t.observe(h.root,0);
+  assert.equal(first.status,'confirming');
+  assert.equal(first.value,null);
   const yes=t.observe(h.root,0.6);
   assert.equal(yes.status,'live');
   assert.equal(yes.value,3500);

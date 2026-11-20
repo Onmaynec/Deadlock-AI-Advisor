@@ -86,5 +86,5 @@ test('real Panorama script creates a native panel and all controls without a bro
   press('Диагностика HUD');
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('золото есть')));
   press('Отметить купленным');
-  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('РЕКОМЕНДУЕМЫЕ')));
+  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('СЛЕДУЮЩИЕ ПОКУПКИ')));
 });
