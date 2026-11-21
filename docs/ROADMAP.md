@@ -48,11 +48,28 @@ See docs/HUD_TELEMETRY.md for evidence and test steps.
 
 See docs/MATCHUP_PLANNER.md and docs/HUD_TELEMETRY.md.
 
-## v0.4.0 — AI
+## v0.4.0 — HUD Context and Inference Safety (experimental)
 
-- [ ] Research allowed ways to call an external model from the game without a companion window
-- [ ] Never ship hidden LLM API keys or bypass the game's sandbox
-- [ ] Output schema validation against current real item IDs and economy
-- [ ] Fully functional deterministic fallback when no model is available
+- [x] Research currently exposed top-bar team containers and hero-name labels
+- [x] Implement read-only opponent hero detection scoped exclusively to TeamEnemy
+- [x] Two identical observations, strict catalog matching, short expiration and immediate fail-closed invalidation
+- [x] Auto / manual roster selector inside Panorama; never silently trust unreadable labels
+- [x] Feed verified enemy IDs into matchup-aware item ranking; show provenance in HUD
+- [x] Model-response validation boundary: context identity, selected opponents, threats, inventory, slots and currency
+- [x] Reject hallucinated, duplicate, unaffordable, malformed and stale model item suggestions; use offline fallback
+- [x] Unit tests and Panorama smoke tests for roster transitions and inference firewall
+- [ ] Verify opponent names are readable from the current Deadlock Panorama client
+- [ ] Validate and build the actual game VPK on Windows with Deadlock installed
+- [ ] Automatic own inventory and enemy item purchases (not implemented)
+- [ ] Real free LLM integration (not implemented; requires validated permitted transport and explicit trust/consent)
 
-No DLL injection, memory scanner, anti-cheat bypass or automatic game input.
+See docs/HUD_CONTEXT_AI.md for source evidence, limitations and game acceptance checklist.
+
+## Next steps
+
+- Test the latest compiled VPK directly in an actual Deadlock client (Issues #2 and #5)
+- Explore permitted, consent-based HTTPS in-game browser-panel inference (no additional UI window), never embedding API tokens
+- Only then automate item inventories, purchases and context-aware generative explanations
+- Add mode-aware active-item limits and versioned confidence calibration
+
+No DLL injection, process memory scanning, cheat bypass, or automatic purchasing is used.

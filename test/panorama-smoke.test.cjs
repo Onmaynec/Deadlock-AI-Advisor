@@ -14,6 +14,10 @@ class Panel {
   AddClass(k) {this.classes.add(k);}
   SetHasClass(k, val) {if(val)this.classes.add(k);else this.classes.delete(k);}
   BHasClass(k) {return this.classes.has(k);}
+  FindChildrenWithClassTraverse(k) {
+    return this.children.flatMap(c=>[...(c.BHasClass(k)?[c]:[]),
+      ...c.FindChildrenWithClassTraverse(k)]);
+  }
   SetPanelEvent(name,cb) {this.events[name]=cb;}
   Children() {return this.children;}
   FindChildTraverse(id) {
@@ -41,6 +45,14 @@ test('real Panorama script creates a native panel and all controls without a bro
   const currentGold = new Panel('Panel',root,'CurrentGoldAmount');
   const goldLabel = new Panel('Label',currentGold,'hudCurGoldLabel');
   goldLabel.text='2,400';
+  const top=new Panel('Panel',root,'TopBar');
+  const teams=new Panel('Panel',top,'TeamsContainer');
+  const friendly=new Panel('Panel',teams,'TeamFriendly');
+  const ally=new Panel('Label',friendly,'');
+  ally.AddClass('HeroName'); ally.text='TestHero';
+  const enemyTeam=new Panel('Panel',teams,'TeamEnemy');
+  const enemyLabel=new Panel('Label',enemyTeam,'');
+  enemyLabel.AddClass('HeroName'); enemyLabel.text='TestEnemy';
   const $={
     GetContextPanel:()=>root,
     CreatePanel:(type,parent,id)=>new Panel(type,parent,id),
@@ -62,14 +74,18 @@ test('real Panorama script creates a native panel and all controls without a bro
   });
   const core=fs.readFileSync(path.join(__dirname,'..','src','advisor-core.js'),'utf8');
   const telemetry=fs.readFileSync(path.join(__dirname,'..','src','telemetry.js'),'utf8');
+  const roster=fs.readFileSync(path.join(__dirname,'..','src','roster-telemetry.js'),'utf8');
+  const guard=fs.readFileSync(path.join(__dirname,'..','src','inference-guard.js'),'utf8');
   const hud=fs.readFileSync(path.join(__dirname,'..','src','panorama','advisor.js'),'utf8');
-  vm.runInContext(core+'\n'+telemetry+'\n'+hud,context,{timeout:2000});
+  vm.runInContext(core+'\n'+telemetry+'\n'+roster+'\n'+guard+'\n'+hud,context,{timeout:2000});
   const widget=root.FindChildTraverse('DeadlockAIAdvisorRoot');
   assert.ok(widget,'HUD widget exists');
   assert.equal(widget.BHasClass('DAAOpen'),false);
   scheduled.shift()(); // gold observation 1
   scheduled.shift()(); // gold observation 2
   bindings.key_backslash();
+  assert.ok(descendants(root).some(p=>p.type==='Label' &&
+    p.text.includes('Враги: TestEnemy') && p.text.includes('HUD')));
   assert.equal(widget.BHasClass('DAAOpen'),true);
   function press(label) {
     const button=descendants(widget).find(p=>
@@ -86,9 +102,23 @@ test('real Panorama script creates a native panel and all controls without a bro
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('2400')&&p.text.includes('[HUD]')));
   press('Диагностика HUD');
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('золото есть')));
+  enemyLabel.text = '{s:hero_name}'; // stale/unresolved HUD binding
+  scheduled.shift()();
+  assert.ok(descendants(widget).some(p=>p.type==='Label' &&
+    p.text.includes('Враги: HUD не определил состав')));
+  enemyLabel.text = 'TestEnemy';
+  scheduled.shift()(); // reconfirmation 1
+  scheduled.shift()(); // reconfirmation 2
+  assert.ok(descendants(widget).some(p=>p.type==='Label' &&
+    p.text.includes('Враги: TestEnemy') && p.text.includes('HUD')));
   press('Выбрать врагов');
   press('+ TestEnemy');
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('TestEnemy')&&p.text.includes('(1/6)')));
+  press('Закрыть выбор');
+  press('Вернуть автосостав');
+  assert.ok(descendants(widget).some(p=>p.type==='Label' &&
+    p.text.includes('Враги: TestEnemy') && p.text.includes('HUD')));
+  press('Выбрать врагов');
   press('Закрыть выбор');
   press('В план');
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text==='Убрать из плана'));
@@ -99,6 +129,6 @@ test('real Panorama script creates a native panel and all controls without a bro
   press('Слоты 0/9');
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('Слоты 0/10')));
   press('Новый матч');
-  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('Враги: не выбраны')));
+  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('Враги: HUD не определил состав')));
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('СЛЕДУЮЩИЕ ПОКУПКИ')));
 });
