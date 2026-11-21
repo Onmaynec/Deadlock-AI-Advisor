@@ -37,7 +37,7 @@ The v0.4 src/inference-guard.js module provides a strict protocol to validate *p
 }
 ~~~
 
-Context covers own hero, selected enemies, marked-owned items, available souls, slot capacity, threat flags, and pinned next purchases. Any change makes the old response stale. Recommendations must refer to existing legal shop IDs within the offline candidate shortlist. Unknown, duplicate, malformed, unaffordable or unconfirmed-budget items are rejected; all displayed prices, names and reasons are taken from the local engine, never from model-generated text. When the model is absent, the game uses the original offline planner.
+Context covers own hero, selected enemies, marked-owned items, available souls, slot capacity, threat flags, pinned next purchases **and a local session epoch incremented when the match is manually reset or the hero changes**. An unobservable same-hero match transition still requires the player to press **Новый матч**. Any change makes the old response stale. Recommendations must refer to existing legal shop IDs within the offline candidate shortlist. Unknown, duplicate, malformed, unaffordable or unconfirmed-budget items are rejected; all displayed prices, names and reasons are taken from the local engine, never from model-generated text. When the model is absent, the game uses the original offline planner.
 
 **There is no live generative AI inference in v0.4.** Do not describe the model-output validator as a working LLM integration.
 

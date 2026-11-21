@@ -10,7 +10,7 @@ const catalog={items:[
   {id:3,name:'Ordinary',slot:'weapon',cost:600,shopable:true}
 ]};
 function state() {return {heroId:7,enemyHeroIds:[5,6],owned:[],souls:2500,
-  slots:9,threats:{healing:true},pinned:[]};}
+  slots:9,threats:{healing:true},pinned:[],sessionEpoch:1};}
 function proposal(s,item_ids) {
   return {version:1,context:guard.contextSignature(s),item_ids};
 }
@@ -34,7 +34,7 @@ test('changes to enemy roster, threat flags, budget or pins invalidate model out
   const s=state(), p=proposal(s,[1]);
   const edits=[
     {enemyHeroIds:[9]},{threats:{healing:false}},{souls:2300},
-    {pinned:['1']},{owned:['2']},{slots:10},{heroId:8}
+    {pinned:['1']},{owned:['2']},{slots:10},{heroId:8},{sessionEpoch:2}
   ];
   edits.forEach(change=>{
     assert.equal(guard.validate(catalog,Object.assign({},s,change),p).reason,

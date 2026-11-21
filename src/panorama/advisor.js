@@ -12,7 +12,7 @@
   var rosterTracker = DAA_ROSTER.createTracker(heroes);
   var model = {
     visible: false, pinned: false, heroId: '', manualHero: '',
-    heroLostAt: -1, seconds: 0,
+    heroLostAt: -1, seconds: 0, sessionEpoch: 0,
     soulsMode: 'auto', manualSouls: null, evidence: null,
     threats: {healing:false, control:false, bullets:false, spirit:false},
     owned: [], planPins: [], enemyHeroIds: [], slots: 9,
@@ -51,6 +51,7 @@
     }
   }
   function resetAnnotations() {
+    model.sessionEpoch++;
     // Never reuse manually marked enemy threats or "purchased" items for another hero.
     model.threats = {healing:false,control:false,bullets:false,spirit:false};
     model.owned = [];
@@ -206,7 +207,8 @@
     var snapshot = {
       heroId:selected ? selected.id : '', souls:budgetNow,
       owned:model.owned, threats:model.threats,
-      pinned:model.planPins, enemyHeroIds:activeEnemyIds(), slots:model.slots
+      pinned:model.planPins, enemyHeroIds:activeEnemyIds(), slots:model.slots,
+      sessionEpoch:model.sessionEpoch
     };
     var plan = DAA.plan(DAA_CATALOG,snapshot,6);
     // No neural provider is connected in v0.4: always use the validated

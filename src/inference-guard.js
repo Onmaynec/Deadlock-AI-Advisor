@@ -14,7 +14,8 @@ var DAA_INFERENCE = (function () {
     var pins = Array.isArray(s.pinned) ? s.pinned.map(String).slice(0,5) : [];
     return [String(s.heroId == null ? '' : s.heroId), ids.join(','),
       owned.join(','), s.souls == null ? '?' : String(s.souls),
-      String(s.slots == null ? 9 : s.slots), flags, pins.join(',')].join('|');
+      String(s.slots == null ? 9 : s.slots), flags, pins.join(','),
+      String(s.sessionEpoch == null ? 0 : s.sessionEpoch)].join('|');
   }
   function validate(catalog, state, proposal) {
     if (!proposal || typeof proposal !== 'object' || Array.isArray(proposal))
