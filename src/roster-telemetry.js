@@ -26,11 +26,14 @@ var DAA_ROSTER = (function () {
     if (!Array.isArray(heroes)) return index;
     heroes.forEach(function (hero) {
       if (!hero || !hero.name || !isFinite(Number(hero.id))) return;
-      var k = norm(hero.name);
-      if (!k) return;
-      // A duplicate localized display name is ambiguous: reject it.
-      if (index[k] !== undefined) index[k] = '';
-      else index[k] = String(hero.id);
+      var names=[hero.name].concat(Array.isArray(hero.aliases)?hero.aliases:[]);
+      names.forEach(function (name) {
+        var k=norm(name), id=String(hero.id);
+        if (!k) return;
+        // Cross-ID aliases must never be guessed.
+        if (index[k]===undefined) index[k]=id;
+        else if(index[k]!==id) index[k]='';
+      });
     });
     return index;
   }

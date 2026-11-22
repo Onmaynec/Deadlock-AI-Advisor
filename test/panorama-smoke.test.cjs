@@ -53,6 +53,14 @@ test('real Panorama script creates a native panel and all controls without a bro
   const enemyTeam=new Panel('Panel',teams,'TeamEnemy');
   const enemyLabel=new Panel('Label',enemyTeam,'');
   enemyLabel.AddClass('HeroName'); enemyLabel.text='TestEnemy';
+  const shop=new Panel('Panel',root,'CitadelHudHeroShop');
+  const purchases=new Panel('Panel',shop,'RecentPurchasesContainer');
+  const purchase=new Panel('Panel',purchases,'');
+  purchase.AddClass('recentPurchase');
+  const purchaseItem=new Panel('Label',purchase,'');
+  purchaseItem.AddClass('recentModPurchaseName');purchaseItem.text='Healing Nova';
+  const purchaseTime=new Panel('Label',purchase,'');
+  purchaseTime.AddClass('recentTimePurchased');purchaseTime.text='12:35';
   const $={
     GetContextPanel:()=>root,
     CreatePanel:(type,parent,id)=>new Panel(type,parent,id),
@@ -67,7 +75,8 @@ test('real Panorama script creates a native panel and all controls without a bro
       items:[
         {id:1,name:'Healbane',slot:'spirit',cost:1200,shopable:true},
         {id:2,name:'Metal Skin',slot:'vitality',cost:3000,shopable:true},
-        {id:3,name:'Plain Gun',slot:'weapon',cost:1500,shopable:true}
+        {id:3,name:'Plain Gun',slot:'weapon',cost:1500,shopable:true},
+        {id:4,name:'Healing Nova',slot:'vitality',cost:900,shopable:true}
       ]
     },
     DAA_SETTINGS:{autoShowShop:true,hotkey:'key_backslash'}
@@ -76,8 +85,10 @@ test('real Panorama script creates a native panel and all controls without a bro
   const telemetry=fs.readFileSync(path.join(__dirname,'..','src','telemetry.js'),'utf8');
   const roster=fs.readFileSync(path.join(__dirname,'..','src','roster-telemetry.js'),'utf8');
   const guard=fs.readFileSync(path.join(__dirname,'..','src','inference-guard.js'),'utf8');
+  const feed=fs.readFileSync(path.join(__dirname,'..','src','purchase-feed.js'),'utf8');
+  const evidence=fs.readFileSync(path.join(__dirname,'..','src','enemy-item-evidence.js'),'utf8');
   const hud=fs.readFileSync(path.join(__dirname,'..','src','panorama','advisor.js'),'utf8');
-  vm.runInContext(core+'\n'+telemetry+'\n'+roster+'\n'+guard+'\n'+hud,context,{timeout:2000});
+  vm.runInContext(core+'\n'+telemetry+'\n'+roster+'\n'+feed+'\n'+evidence+'\n'+guard+'\n'+hud,context,{timeout:2000});
   const widget=root.FindChildTraverse('DeadlockAIAdvisorRoot');
   assert.ok(widget,'HUD widget exists');
   assert.equal(widget.BHasClass('DAAOpen'),false);
@@ -93,6 +104,18 @@ test('real Panorama script creates a native panel and all controls without a bro
     assert.ok(button,'button missing: '+label);
     button.events.onactivate();
   }
+  press('Последние покупки');
+  assert.ok(descendants(widget).some(p=>p.type==='Label' && p.text.includes('Healing Nova')));
+  press('Подтвердить у врага');
+  assert.ok(descendants(widget).some(p=>p.type==='Label' &&
+    p.text.includes('У врагов (вручную): 1') && p.text.includes('healing')));
+  press('Найти предмет');
+  const search=descendants(widget).find(p=>p.type==='TextEntry');
+  assert.ok(search);
+  search.text='Metal';
+  search.events.ontextentrychange();
+  press('Отметить у врага: Metal Skin');
+  assert.ok(descendants(widget).some(p=>p.type==='Label' && p.text.includes('У врагов (вручную): 2')));
   press('Лечение');
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('восстановления здоровья')));
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('2400')&&p.text.includes('[HUD]')));

@@ -1,7 +1,8 @@
 /* Panorama CSS, not browser CSS. No unsupported sibling selectors or DOM layout. */
 .DAAWindow {
-  width: 445px;
+  width: 490px;
   max-height: 900px;
+  overflow: squish scroll;
   flow-children: down;
   position: 36px 180px 0px;
   padding: 14px 16px;
@@ -28,7 +29,7 @@
 .DAAThreat { background-color: #223040; padding: 5px; margin-right: 5px; border: 1px solid #42556b; }
 .DAAThreat.DAAThreatOn { background-color: #42716c; border: 1px solid #7fd3b5; }
 .DAAThreat Label { color: #d6e5f0; font-size: 13px; }
-.DAAResults { flow-children: down; width: 100%; max-height: 420px; overflow: squish scroll; }
+.DAAResults { flow-children: down; width: 100%; max-height: 245px; overflow: squish scroll; }
 .DAAItem { width: 100%; flow-children: down; padding: 8px; margin-bottom: 6px; background-color: #1a2a36; border-radius: 5px; }
 .DAAItemHeader { flow-children: right; width: 100%; }
 .DAAItemTitle { width: fill-parent-flow(1.0); color: #f1ecd8; font-size: 16px; font-weight: bold; }
@@ -55,3 +56,15 @@
 .DAAEnemyRemove:hover { background-color: #72474d; }
 .DAAEnemyRemove Label { color: #e8cfcb; font-size: 12px; }
 .DAAInventory { width: 100%; max-height: 70px; flow-children: right-wrap; overflow: squish scroll; }
+
+/* v0.5: observed shop purchases + manual attribution to enemy. */
+.DAARecentPurchases { width: 100%; flow-children: down; max-height: 160px; overflow: squish scroll; }
+.DAAEnemyItems { width: 100%; flow-children: down; max-height: 150px; overflow: squish scroll; }
+.DAAPurchaseEntry { color: #d4dfdf; font-size: 12px; width: fill-parent-flow(1.0);
+  white-space: normal; vertical-align: center; }
+.DAASearchBox { width: 100%; flow-children: down; visibility: collapse; margin-bottom: 6px; }
+.DAASearchBox.DAASearchOpen { visibility: visible; }
+.DAASearchInput { width: 98%; height: 32px; background-color: #182e3c;
+  border: 1px solid #51718b; padding: 3px 8px; color: #edf7f4; font-size: 14px; }
+.DAASearchResults { width: 100%; flow-children: down; max-height: 155px; overflow: squish scroll; }
+.DAAResultButton { width: 100%; margin-bottom: 3px; }

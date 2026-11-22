@@ -65,6 +65,25 @@ See docs/MATCHUP_PLANNER.md and docs/HUD_TELEMETRY.md.
 
 See docs/HUD_CONTEXT_AI.md for source evidence, limitations and game acceptance checklist.
 
+## v0.5.0 — Purchase Intelligence (experimental)
+
+- [x] Read-only recent-purchase evidence from vanilla shop RecentPurchasesContainer
+- [x] Confirm two identical observations; drop stale/missing/unreadable events
+- [x] Explicitly **unattributed** evidence: never assume shop purchase belongs to enemy or ally
+- [x] In-game manual confirmation of observed purchase as enemy-owned
+- [x] In-game item search / mark / remove independent of feed availability
+- [x] Conservative counter-threat hints from manually confirmed enemy items
+- [x] Feed merged hypotheses into local deterministic advisor; manual threat toggles preserved
+- [x] Context fingerprint invalidated when enemy item annotations change
+- [x] Optional Russian aliases from public build-time API; matching by validated IDs
+- [x] Unit tests, Panorama smoke tests, CI on Windows and Linux
+- [ ] Verify actual purchase feed rows and localization on current Deadlock client
+- [ ] Validate item ownership attribution from an explicitly permitted and reliable live source
+- [ ] Automatically observe own equipped items (not implemented)
+- [ ] Connect free generative inference (not implemented)
+
+See docs/PURCHASE_INTELLIGENCE.md.
+
 ## Next steps
 
 - Test the latest compiled VPK directly in an actual Deadlock client (Issues #2 and #5)

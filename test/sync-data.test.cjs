@@ -1,6 +1,6 @@
 const {test} = require('node:test');
 const assert = require('node:assert/strict');
-const {transform, normaliseStats} = require('../tools/sync-data.cjs');
+const {transform, normaliseStats, addAliases} = require('../tools/sync-data.cjs');
 test('normalizes public assets into an unambiguous catalog', () => {
   const heroes = [{id:1,name:'Hero',class_name:'hero_hero'}];
   const items = Array.from({length:25}, (_, i) => ({id: i+1,name:'Item'+i,cost:500,
@@ -53,4 +53,19 @@ test('filters disabled and tier-5 item variants from normal-match shop snapshot'
  const out=transform(heroes,items);
  assert.equal(out.items.length,25);
  assert.ok(out.items.every(x=>x.id<80));
+});
+
+test('optional Russian names are linked by real IDs, not invented via fuzzy matching',()=>{
+  const data={
+    heroes:[{id:10,name:'Lady Geist'},{id:11,name:'Warden'}],
+    items:[{id:20,name:'Healing Nova'},{id:21,name:'Knockdown'}]
+  };
+  const count=addAliases(data,
+    [{id:10,name:'Леди Гайст'},{id:99,name:'Неизвестный герой'}],
+    [{id:20,name:'Исцеляющая нова'},{id:21,name:'#InvalidToken'},
+      {id:10,name:'Другая сущность'}]);
+  assert.equal(count,2);
+  assert.deepEqual(data.heroes[0].aliases,['Леди Гайст']);
+  assert.deepEqual(data.items[0].aliases,['Исцеляющая нова']);
+  assert.equal(data.items[1].aliases,undefined);
 });

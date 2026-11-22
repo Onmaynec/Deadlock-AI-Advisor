@@ -8,6 +8,7 @@ var DAA_INFERENCE = (function () {
     var s = state || {};
     var ids = Array.isArray(s.enemyHeroIds) ? s.enemyHeroIds.map(String).slice(0,6).sort() : [];
     var owned = Array.isArray(s.owned) ? s.owned.map(String).sort() : [];
+    var enemyItems = Array.isArray(s.enemyItemIds) ? s.enemyItemIds.map(String).slice(0,12).sort() : [];
     var threats = s.threats || {};
     var flagKeys = ['healing','control','bullets','spirit'];
     var flags = flagKeys.map(function(k){return threats[k] === true ? '1' : '0';}).join('');
@@ -15,7 +16,7 @@ var DAA_INFERENCE = (function () {
     return [String(s.heroId == null ? '' : s.heroId), ids.join(','),
       owned.join(','), s.souls == null ? '?' : String(s.souls),
       String(s.slots == null ? 9 : s.slots), flags, pins.join(','),
-      String(s.sessionEpoch == null ? 0 : s.sessionEpoch)].join('|');
+      String(s.sessionEpoch == null ? 0 : s.sessionEpoch),enemyItems.join(',')].join('|');
   }
   function validate(catalog, state, proposal) {
     if (!proposal || typeof proposal !== 'object' || Array.isArray(proposal))

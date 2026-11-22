@@ -100,6 +100,8 @@ async function main() {
     JSON.stringify(settings) + ';\n' + fs.readFileSync(path.join(ROOT,'src/advisor-core.js'),'utf8') +
     '\n' + fs.readFileSync(path.join(ROOT,'src/telemetry.js'),'utf8') +
     '\n' + fs.readFileSync(path.join(ROOT,'src/roster-telemetry.js'),'utf8') +
+    '\n' + fs.readFileSync(path.join(ROOT,'src/purchase-feed.js'),'utf8') +
+    '\n' + fs.readFileSync(path.join(ROOT,'src/enemy-item-evidence.js'),'utf8') +
     '\n' + fs.readFileSync(path.join(ROOT,'src/inference-guard.js'),'utf8') +
     '\n' + fs.readFileSync(path.join(ROOT,'src/panorama/advisor.js'),'utf8');
   const files = [
