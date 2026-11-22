@@ -89,3 +89,13 @@ test('fallback to bounded Children traversal if class search is unavailable',()=
   enemy.FindChildrenWithClassTraverse=null;
   assert.deepEqual(R.probe(root,heroes).ids,['102']);
 });
+
+test('localized hero aliases match only their own hero ID',()=>{
+  const localized=[
+    {id:101,name:'Lady Geist',aliases:['Леди Гайст']},
+    {id:102,name:'Warden',aliases:['Страж']}
+  ];
+  assert.deepEqual(R.probe(hud(['Леди Гайст','Страж']),localized).ids,['101','102']);
+  localized[0].aliases.push('Страж');
+  assert.equal(R.probe(hud(['Страж']),localized).status,'unmapped');
+});

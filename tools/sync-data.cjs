@@ -50,12 +50,12 @@ function transform(heroes, items) {
   itemList.sort((a,b) => a.name.localeCompare(b.name));
   return {heroes: heroList, items: itemList};
 }
-async function get(name) {
+async function get(name, language) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 25000);
   try {
-    const r = await fetch(API + name + '?language=english', {
-      headers: {'User-Agent':'Deadlock-AI-Advisor/0.1.0'}, signal: controller.signal
+    const r = await fetch(API + name + '?language=' + encodeURIComponent(language || 'english'), {
+      headers: {'User-Agent':'Deadlock-AI-Advisor/0.5.0'}, signal: controller.signal
     });
     if (!r.ok) throw new Error(name + ' HTTP ' + r.status);
     return await r.json();
@@ -80,14 +80,47 @@ async function getStats() {
   const timer = setTimeout(() => controller.abort(), 45000);
   try {
     const response = await fetch('https://api.deadlock-api.com/v1/analytics/item-stats?bucket=hero&min_matches=100',
-      {headers: {'User-Agent':'Deadlock-AI-Advisor/0.1.0'}, signal:controller.signal});
+      {headers: {'User-Agent':'Deadlock-AI-Advisor/0.5.0'}, signal:controller.signal});
     if (!response.ok) throw new Error('analytics HTTP ' + response.status);
     return await response.json();
   } finally { clearTimeout(timer); }
 }
+
+function addAliases(catalog, localHeroes, localItems) {
+  let added=0;
+  function attach(target, raw) {
+    const byId=new Map(target.map(x=>[Number(x.id),x]));
+    for(const row of listResponse(raw)) {
+      if(!row || !Number.isFinite(Number(row.id)) ||
+          typeof row.name!=='string') continue;
+      const item=byId.get(Number(row.id));
+      const alias=row.name.trim();
+      if(!item || alias.length<2 || alias.length>90 ||
+          alias[0]==='#' || alias[0]==='{' ||
+          alias.toLowerCase()===item.name.toLowerCase()) continue;
+      if(!item.aliases) item.aliases=[];
+      if(!item.aliases.some(v=>v.toLowerCase()===alias.toLowerCase())) {
+        item.aliases.push(alias);added++;
+      }
+    }
+  }
+  if(localHeroes) attach(catalog.heroes,localHeroes);
+  if(localItems) attach(catalog.items,localItems);
+  return added;
+}
+
 async function main() {
   const [heroes, items] = await Promise.all([get('heroes'), get('items')]);
   const catalog = transform(heroes, items);
+  // Optional localizations are downloaded at BUILD time only. Failure does not
+  // prevent a working English snapshot or introduce fuzzy false-positive IDs.
+  try {
+    const locales=await Promise.all([get('heroes','russian'),get('items','russian')]);
+    const aliases=addAliases(catalog,locales[0],locales[1]);
+    console.log('Russian display aliases: '+aliases);
+  } catch(e) {
+    console.warn('Russian labels unavailable; English catalog remains valid:',e.message);
+  }
   try {
     catalog.heroStats = normaliseStats(await getStats(), catalog);
     console.log('Loaded hero-specific purchase priors for ' +
@@ -103,4 +136,4 @@ async function main() {
   console.log('Synced ' + catalog.heroes.length + ' heroes and ' + catalog.items.length + ' shopable items');
 }
 if (require.main === module) main().catch(e => {console.error('Sync error:',e.message);process.exitCode=1;});
-module.exports = {transform, listResponse, normaliseStats};
+module.exports = {transform, listResponse, normaliseStats, addAliases};
