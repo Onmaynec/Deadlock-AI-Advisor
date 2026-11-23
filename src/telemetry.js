@@ -98,8 +98,9 @@ var DAA_TELEMETRY = (function () {
       playerShop: !!child(root, 'CitadelHudHeroShop'),
       abilities: !!child(root, 'AbilitiesContainer'),
       playerHud: !!child(root, 'gameplay_hud_alive'),
-      inventorySurface: !!child(root, 'PlayerModsContainer'),
-      scoreboardSurface: !!child(root, 'hud_top_bar')
+      inventorySurface: !!child(root, 'ModPurchasedPanelUniversal') ||
+        !!child(root, 'ModPurchasedPanelUniversalLocked'),
+      scoreboardSurface: !!child(root, 'TopBar')
     };
   }
   return {parseSouls:parseSouls,probe:probe,createTracker:createTracker,

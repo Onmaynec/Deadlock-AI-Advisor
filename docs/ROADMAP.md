@@ -121,6 +121,24 @@ See docs/ECONOMY_ROUTE.md. The read-only doctor is a diagnostic aid, not a subst
 
 See docs/VPK_COMPATIBILITY.md.
 
+## v0.8.0 — Inventory Control & HUD Health (experimental)
+
+- [x] Full-catalog own-item search inside native Panorama HUD, including validated Russian aliases
+- [x] Single verified inventory-state module for buys from recommendations and full-catalog search
+- [x] Reject duplicate, nonexistent or over-capacity manual items; account for consumed upgrades
+- [x] Up to 10 reversible manual inventory operations (add/remove/reset)
+- [x] Local HUD-source status panel for currency, roster and purchase feed
+- [x] Independently guard each read-only adapter; prevent one thrown exception from blocking other sources
+- [x] Immediately discard invalid adapter data and reset the failing reader
+- [x] Run new inventory/health unit tests and in-game mock Panorama smoke tests
+- [x] Include both modules in compiled VPK bundle and CI integration build
+- [ ] Verify read-only HUD probes and Source 2 panel event handling inside the current real Deadlock client
+- [ ] Confirm safe automatic own inventory item IDs in exposed runtime panels; do not guess based on icon containers
+- [ ] Resolve same-hero match boundary without manual reset, using confirmed permitted HUD data
+- [ ] Implement actual consent-based free LLM transport and inference after validated network capabilities
+
+See docs/INVENTORY_HUD_HEALTH.md.
+
 ## Next steps
 
 - Test the latest compiled VPK directly in an actual Deadlock client (Issues #2 and #5)
