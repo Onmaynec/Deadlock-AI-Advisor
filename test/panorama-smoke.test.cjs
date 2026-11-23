@@ -180,6 +180,9 @@ test('real Panorama script creates a native panel and all controls without a bro
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('Слоты 0/9')));
   press('Слоты 0/9');
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('Слоты 0/10')));
+  press('Выбрать врагов');
+  press('+ TestEnemy');
+  press('Закрыть выбор');
   press('Код сборки');
   press('Создать код');
   const blueprintEntry=descendants(widget).find(p=>p.BHasClass('DAABlueprintInput'));
