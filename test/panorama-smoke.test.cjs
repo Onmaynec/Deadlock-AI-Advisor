@@ -88,8 +88,10 @@ test('real Panorama script creates a native panel and all controls without a bro
   const feed=fs.readFileSync(path.join(__dirname,'..','src','purchase-feed.js'),'utf8');
   const evidence=fs.readFileSync(path.join(__dirname,'..','src','enemy-item-evidence.js'),'utf8');
   const route=fs.readFileSync(path.join(__dirname,'..','src','purchase-route.js'),'utf8');
+  const inventory=fs.readFileSync(path.join(__dirname,'..','src','inventory-state.js'),'utf8');
+  const health=fs.readFileSync(path.join(__dirname,'..','src','hud-health.js'),'utf8');
   const hud=fs.readFileSync(path.join(__dirname,'..','src','panorama','advisor.js'),'utf8');
-  vm.runInContext(core+'\n'+telemetry+'\n'+roster+'\n'+feed+'\n'+evidence+'\n'+guard+'\n'+route+'\n'+hud,context,{timeout:2000});
+  vm.runInContext(core+'\n'+telemetry+'\n'+roster+'\n'+feed+'\n'+evidence+'\n'+guard+'\n'+route+'\n'+inventory+'\n'+health+'\n'+hud,context,{timeout:2000});
   const widget=root.FindChildTraverse('DeadlockAIAdvisorRoot');
   assert.ok(widget,'HUD widget exists');
   assert.equal(widget.BHasClass('DAAOpen'),false);
@@ -122,6 +124,18 @@ test('real Panorama script creates a native panel and all controls without a bro
     p.text.includes('План на текущие 2400 душ')));
   assert.ok(descendants(widget).some(p=>p.type==='Label' &&
     p.text.includes('Останется:')));
+  press('Найти мой предмет');
+  const mySearch=descendants(widget).find(p=>p.type==='TextEntry' && p.BHasClass('DAAInventorySearchInput'));
+  assert.ok(mySearch,'full catalog own-item search exists');
+  mySearch.text='Plain';
+  mySearch.events.ontextentrychange();
+  press('Куплен: Plain Gun');
+  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('Слоты 1/9')));
+  press('Отменить покупку');
+  assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('Слоты 0/9')));
+  press('Источники HUD');
+  assert.ok(descendants(widget).some(p=>p.type==='Label' && p.text.includes('Души: live')));
+  assert.ok(descendants(widget).some(p=>p.type==='Label' && p.text.includes('Лента магазина: live')));
   press('Лечение');
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('восстановления здоровья')));
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('2400')&&p.text.includes('[HUD]')));

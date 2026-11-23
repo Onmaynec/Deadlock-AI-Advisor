@@ -79,3 +79,16 @@
 .DAARouteStepTitle { color: #e4ede7; font-size: 13px; font-weight: bold; }
 .DAASavingTarget { color: #dec28f; font-size: 12px;
   white-space: normal; padding: 5px 7px; }
+
+/* v0.8 — manual full-catalog inventory search and HUD-source diagnostics. */
+.DAAInventorySearchBox { width: 100%; flow-children: down; visibility: collapse;
+  margin-bottom: 6px; }
+.DAAInventorySearchBox.DAASearchOpen { visibility: visible; }
+.DAAInventorySearchInput { width: 98%; height: 32px; background-color: #182e3c;
+  border: 1px solid #51718b; padding: 3px 8px; color: #edf7f4; font-size: 14px; }
+.DAAInventorySearchResults { width: 100%; flow-children: down; max-height: 145px;
+  overflow: squish scroll; }
+.DAASourceHealth { width: 100%; flow-children: down; visibility: collapse;
+  background-color: #172a32; padding: 8px; margin-top: 6px; max-height: 155px;
+  overflow: squish scroll; }
+.DAASourceHealth.DAASourceOpen { visibility: visible; }

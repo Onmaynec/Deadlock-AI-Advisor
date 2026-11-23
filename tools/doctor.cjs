@@ -122,7 +122,7 @@ function inspect(args={}) {
       add('warn','game-newer-than-mod','Файлы игры обновлены после установки мода; пересобери VPK');
   }
   return {healthy:!results.some(x=>x.level==='error'),gameFound:true,
-    checks:results,version:'0.7.0'};
+    checks:results,version:'0.8.0'};
 }
 function main() {
   const configPath=path.join(ROOT,'config.json');

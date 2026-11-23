@@ -1,6 +1,6 @@
 {
   "name": "deadlock-ai-advisor",
-  "version": "0.7.0",
+  "version": "0.8.0",
   "private": true,
   "description": "Native Deadlock Panorama HUD mod with an offline, explainable item recommendation engine.",
   "license": "MIT",
@@ -14,6 +14,6 @@
     "uninstall-mod": "node tools/build.cjs --uninstall",
     "test": "node --test",
     "test:build": "node --test test/build-integration.test.cjs",
-    "check": "node --check src/advisor-core.js && node --check src/telemetry.js && node --check src/roster-telemetry.js && node --check src/purchase-feed.js && node --check src/enemy-item-evidence.js && node --check src/inference-guard.js && node --check src/purchase-route.js && node --check src/panorama/advisor.js && node --check tools/build.cjs && node --check tools/doctor.cjs && node --check tools/sync-data.cjs && node --check tools/sync-matchups.cjs && node --test"
+    "check": "node --check src/advisor-core.js && node --check src/telemetry.js && node --check src/roster-telemetry.js && node --check src/purchase-feed.js && node --check src/enemy-item-evidence.js && node --check src/inference-guard.js && node --check src/purchase-route.js && node --check src/inventory-state.js && node --check src/hud-health.js && node --check src/panorama/advisor.js && node --check tools/build.cjs && node --check tools/doctor.cjs && node --check tools/sync-data.cjs && node --check tools/sync-matchups.cjs && node --test"
   }
 }

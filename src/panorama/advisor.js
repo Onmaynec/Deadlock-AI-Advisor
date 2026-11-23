@@ -1,4 +1,4 @@
-/* Deadlock AI Advisor v0.6.0: native, in-game Panorama UI.
+/* Deadlock AI Advisor v0.8.0: native, in-game Panorama UI.
  * Runtime imports DAA, DAA_TELEMETRY and DAA_CATALOG from VPK build.
  * No browser, external overlay, DLL, process memory reading or hidden-game-data access.
  */
@@ -11,12 +11,17 @@
   var tracker = DAA_TELEMETRY.createTracker();
   var rosterTracker = DAA_ROSTER.createTracker(heroes);
   var purchaseTracker = DAA_PURCHASES.createTracker(DAA_CATALOG);
+  var healthMonitor = DAA_HUD_HEALTH.createMonitor({
+    souls:tracker,roster:rosterTracker,purchases:purchaseTracker
+  });
   var model = {
     visible: false, pinned: false, heroId: '', manualHero: '',
     heroLostAt: -1, seconds: 0, sessionEpoch: 0,
     soulsMode: 'auto', manualSouls: null, evidence: null,
     threats: {healing:false, control:false, bullets:false, spirit:false},
-    owned: [], planPins: [], enemyHeroIds: [], enemyItemIds: [], slots: 9,
+    owned: [], inventoryHistory: [], inventorySearchOpen:false,
+    inventoryQuery:'', inventoryNotice:'', showSourceHealth:false,
+    planPins: [], enemyHeroIds: [], enemyItemIds: [], slots: 9,
     purchaseEvidence: null, showPurchases: false, showRoute: false,
     itemSearchOpen: false, itemSearchQuery: '',
     rosterMode: 'auto', rosterEvidence: null,
@@ -27,6 +32,7 @@
   var roster, rosterPicker, plannerStatus, slotButton, inventoryRow;
   var recentPurchases, enemyItemsRow, purchaseFeedHeader, searchBox, searchResults;
   var routeStatus, routeList;
+  var inventorySearchBox, inventorySearchResults, inventoryNoticeLabel, sourceHealthPanel;
 
   function valid(p) { try { return !!(p && p.IsValid && p.IsValid()); } catch (e) {return false;} }
   function find(id) { try {return hud.FindChildTraverse(id);} catch (e) {return null;} }
@@ -60,6 +66,10 @@
     // Never reuse manually marked enemy threats or "purchased" items for another hero.
     model.threats = {healing:false,control:false,bullets:false,spirit:false};
     model.owned = [];
+    model.inventoryHistory = [];
+    model.inventorySearchOpen = false;
+    model.inventoryQuery = '';
+    model.inventoryNotice = '';
     model.planPins = [];
     model.enemyHeroIds = [];
     model.enemyItemIds = [];
@@ -78,6 +88,7 @@
     model.manualSouls = null;
     model.soulsMode = 'auto';
     tracker.reset();
+    healthMonitor.reset();
     model.evidence = null;
     model.last = '';
   }
@@ -263,6 +274,7 @@
       enemySource() + ' · подтверждено предметов: ' + model.enemyItemIds.length +
       (inferred.signals.length ? ' · эвристик угроз: ' + inferred.signals.length : '') +
       (heroStats ? ' · статистика героя: да' : ' · статистика героя: нет'));
+    text(inventoryNoticeLabel,model.inventoryNotice);
     clear(resultList);
     if (!options.length) {
       el('Label',resultList,'DAAEmpty',plan.freeSlots === 0 ?
@@ -281,16 +293,7 @@
            it.affordable===null ? ' · ?' : ' · накопить'));
       el('Label',row,'DAAItemReason',it.reason);
       var actions = el('Panel',row,'DAARow');
-      button(actions,'Куплено','DAAMark',function() {
-        if (model.owned.indexOf(it.id)>=0) return;
-        var component = it.componentId;
-        if (component && model.owned.indexOf(component)>=0)
-          model.owned.splice(model.owned.indexOf(component),1);
-        model.owned.push(it.id);
-        model.lastPurchase = {id:it.id, componentId:component};
-        model.planPins = model.planPins.filter(function(id) {return id!==it.id;});
-        render();
-      });
+      button(actions,'Куплено','DAAMark',function() {markOwned(it.id);});
       if (it.pinned || model.planPins.length < 5) {
         button(actions,it.pinned ? 'Убрать из плана' : 'В план','DAAButton',function() {
           if (it.pinned) model.planPins=model.planPins.filter(function(id){return id!==it.id;});
@@ -328,6 +331,79 @@
         (route.saveFor.pinned ? ' · закреплено' : ''));
     }
   }
+  function markOwned(id) {
+    var result=DAA_INVENTORY.mark(DAA_CATALOG,model.owned,id,model.slots);
+    if(!result.ok) {
+      model.inventoryNotice = result.error==='full-inventory' ?
+        'Инвентарь заполнен: освободите слот или улучшите компонент.' :
+        result.error==='already-owned' ? 'Предмет уже отмечен как купленный.' :
+        'Предмет отсутствует в актуальном каталоге.';
+      render();return;
+    }
+    model.inventoryHistory=DAA_INVENTORY.push(model.inventoryHistory,result.previous);
+    model.owned=result.owned;
+    model.lastPurchase={id:String(id),componentId:result.consumed};
+    model.planPins=model.planPins.filter(function(x){return x!==String(id);});
+    model.inventoryNotice=result.consumed ?
+      'Улучшение: компонент заменён; расчётная доплата '+result.payment+' душ.' :
+      'Предмет добавлен в ручной инвентарь. Покупка в игре не выполнялась.';
+    render();
+  }
+  function removeOwned(id) {
+    var result=DAA_INVENTORY.remove(DAA_CATALOG,model.owned,id);
+    if(!result.ok)return;
+    model.inventoryHistory=DAA_INVENTORY.push(model.inventoryHistory,result.previous);
+    model.owned=result.owned;
+    model.lastPurchase=null;
+    model.inventoryNotice='Отметка предмета удалена. В игре ничего не продано.';
+    render();
+  }
+  function undoOwned() {
+    var result=DAA_INVENTORY.undo(DAA_CATALOG,model.inventoryHistory,model.owned);
+    if(!result.ok)return;
+    model.owned=result.owned;
+    model.inventoryHistory=result.history;
+    model.lastPurchase=null;
+    model.inventoryNotice='Последнее изменение ручного инвентаря отменено.';
+    render();
+  }
+  function displayInventorySearch() {
+    if(!valid(inventorySearchBox))return;
+    inventorySearchBox.SetHasClass('DAASearchOpen',model.inventorySearchOpen);
+    clear(inventorySearchResults);
+    if(!model.inventorySearchOpen)return;
+    var needle=DAA_PURCHASES.canonical(model.inventoryQuery);
+    if(needle.length<2) {
+      el('Label',inventorySearchResults,'DAAEvidence','Введите минимум 2 символа.');
+      return;
+    }
+    var found=DAA_CATALOG.items.filter(function(it) {
+      if(!it || it.shopable===false || model.owned.indexOf(String(it.id))>=0)return false;
+      var names=[it.name].concat(Array.isArray(it.aliases)?it.aliases:[]);
+      return names.some(function(x){return DAA_PURCHASES.canonical(x).indexOf(needle)>=0;});
+    });
+    found.slice(0,7).forEach(function(it){
+      button(inventorySearchResults,'Куплен: '+it.name,'DAAButton DAAResultButton',function(){
+        markOwned(it.id);
+      });
+    });
+    if(!found.length)el('Label',inventorySearchResults,'DAAEvidence','Предмет не найден в каталоге.');
+  }
+  function displaySourceHealth() {
+    if(!valid(sourceHealthPanel))return;
+    sourceHealthPanel.SetHasClass('DAASourceOpen',model.showSourceHealth);
+    clear(sourceHealthPanel);
+    if(!model.showSourceHealth)return;
+    var names={souls:'Души',roster:'Враги',purchases:'Лента магазина'};
+    healthMonitor.report().forEach(function(r){
+      el('Label',sourceHealthPanel,'DAAEvidence',
+        names[r.source]+': '+r.status+' · '+r.confidence+
+        ' · ошибок: '+r.errors+(r.lastConfirmedAt===null?'':' · последний live: '+
+          Math.round(r.lastConfirmedAt)+' с'));
+    });
+    el('Label',sourceHealthPanel,'DAAEvidence',
+      'Вся телеметрия экспериментальна. Нет автоматического чтения инвентаря или владельцев покупок.');
+  }
   function displayInventory() {
     clear(inventoryRow);
     if(!model.owned.length) {
@@ -337,9 +413,7 @@
     model.owned.forEach(function(id) {
       var found = DAA_CATALOG.items.filter(function(x){return String(x.id)===id;})[0];
       button(inventoryRow,'− '+(found ? found.name : id),'DAAEnemyRemove',function() {
-        model.owned=model.owned.filter(function(v){return v!==id;});
-        model.lastPurchase=null;
-        render();
+        removeOwned(id);
       });
     });
   }
@@ -478,6 +552,8 @@
     if(!valid(widget)) return;
     refresh();
     displayInventory();
+    displayInventorySearch();
+    displaySourceHealth();
     displayRoster();
     displayPurchaseFeed();
     displayEnemyItems();
@@ -501,7 +577,7 @@
     widget=$.CreatePanel('Panel',hud,'DeadlockAIAdvisorRoot');
     widget.AddClass('DAAWindow');
     var head=el('Panel',widget,'DAAHeader');
-    el('Label',head,'DAATitle','DEADLOCK  /  BUILD ADVISOR  0.6');
+    el('Label',head,'DAATitle','DEADLOCK  /  BUILD ADVISOR  0.8');
     button(head,'×','DAAClose',function(){model.pinned=false;setShown(false);});
     hero=el('Label',widget,'DAAHero','');
     var controls=el('Panel',widget,'DAARow');
@@ -542,18 +618,23 @@
       model.slots = model.slots===12 ? 9 : model.slots+1;
       render();
     });
-    button(plannerTools,'Отменить покупку','DAAButton',function() {
-      if (!model.lastPurchase) return;
-      var last=model.lastPurchase;
-      model.owned=model.owned.filter(function(x){return x!==last.id;});
-      if(last.componentId && model.owned.indexOf(last.componentId)<0)
-        model.owned.push(last.componentId);
-      model.lastPurchase=null;
-      render();
-    });
+    button(plannerTools,'Отменить покупку','DAAButton',undoOwned);
     plannerStatus=el('Label',widget,'DAAEvidence','');
     el('Label',widget,'DAASection','МОИ ПОКУПКИ · РУЧНЫЕ ОТМЕТКИ');
     inventoryRow=el('Panel',widget,'DAAInventory');
+    var inventoryTools=el('Panel',widget,'DAARow');
+    button(inventoryTools,'Найти мой предмет','DAAButton',function(){
+      model.inventorySearchOpen=!model.inventorySearchOpen;render();
+    });
+    inventoryNoticeLabel=el('Label',widget,'DAAEvidence','');
+    inventorySearchBox=el('Panel',widget,'DAAInventorySearchBox');
+    var input=el('TextEntry',inventorySearchBox,'DAAInventorySearchInput');
+    input.SetPanelEvent('ontextentrychange',function(){
+      model.inventoryQuery=String(input.text||'').slice(0,48);
+      displayInventorySearch();
+    });
+    try{input.SetMaxChars(48);}catch(e){}
+    inventorySearchResults=el('Panel',inventorySearchBox,'DAAInventorySearchResults');
     var routeTools=el('Panel',widget,'DAARow');
     button(routeTools,'План на эти души','DAAButton',function(){
       model.showRoute=!model.showRoute;
@@ -567,18 +648,30 @@
     status=el('Label',widget,'DAAFooter','');
     var footer=el('Panel',widget,'DAARow');
     button(footer,'Новый матч','DAAButton',restartMatch);
-    button(footer,'Сбросить покупки','DAAButton',function(){model.owned=[];model.lastPurchase=null;render();});
+    button(footer,'Сбросить покупки','DAAButton',function(){
+      if(model.owned.length)
+        model.inventoryHistory=DAA_INVENTORY.push(model.inventoryHistory,model.owned);
+      model.owned=[];model.lastPurchase=null;
+      model.inventoryNotice='Все ручные отметки сняты; игровая экипировка не изменена.';
+      render();
+    });
     button(footer,'Диагностика HUD','DAAButton',function(){model.debug=!model.debug;render();});
     debugLabel=el('Label',widget,'DAADebug','');
+    button(footer,'Источники HUD','DAAButton',function(){
+      model.showSourceHealth=!model.showSourceHealth;render();
+    });
+    sourceHealthPanel=el('Panel',widget,'DAASourceHealth');
     setShown(false);
   }
   function update() {
     model.seconds += 0.6;
     try {
-      pollHero();
-      model.evidence = tracker.observe(hud, model.seconds);
-      model.rosterEvidence = rosterTracker.observe(hud, model.seconds);
-      model.purchaseEvidence = purchaseTracker.observe(hud, model.seconds);
+      // One failing HUD adapter must not block the other read-only adapters.
+      try {pollHero();} catch(e) {$.Msg('[DAA] hero probe unavailable');}
+      var samples = healthMonitor.sample(hud,model.seconds);
+      model.evidence = samples.souls;
+      model.rosterEvidence = samples.roster;
+      model.purchaseEvidence = samples.purchases;
       var listener = find('AbilitiesContainer');
       var shop=has(listener,'gShopOpen')||has(hud,'gShopOpen');
       if(shop!==model.shopOpen) {
@@ -593,7 +686,8 @@
           model.planPins.join(',')+'/'+model.enemyItemIds.join(',')+'/'+
           (model.purchaseEvidence ? JSON.stringify(model.purchaseEvidence.entries) : '?')+
           '/'+model.rosterMode+'/'+activeEnemyIds().join(',')+
-          '/'+(model.rosterEvidence ? model.rosterEvidence.status : '?')+'/'+model.slots;
+          '/'+(model.rosterEvidence ? model.rosterEvidence.status : '?')+'/'+model.slots+
+          '/'+healthMonitor.report().map(function(r){return r.status;}).join(',');
         if(stateKey!==model.last) {model.last=stateKey;render();}
       }
     } catch(e) {
@@ -608,6 +702,6 @@
     try {$.RegisterKeyBind(hud,DAA_SETTINGS.hotkey||'key_backslash',toggle);}
     catch(e2) {$.Msg('[DAA] keybind unavailable: '+e2);}
   }
-  $.Msg('[DAA] Panorama v0.6.0 loaded; offline economy route + read-only HUD adapters active');
+  $.Msg('[DAA] Panorama v0.8.0 loaded; manual inventory manager and isolated HUD probes active');
   $.Schedule(0.5,update);
 })();
