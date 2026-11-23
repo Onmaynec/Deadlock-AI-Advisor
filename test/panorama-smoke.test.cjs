@@ -193,6 +193,7 @@ test('real Panorama script creates a native panel and all controls without a bro
   assert.ok(descendants(widget).some(p=>p.type==='Label' &&
     p.text.includes('Проверено.')));
   press('Новый матч');
+  press('+500'); // fresh manual balance in the new match
   press('Применить код');
   assert.ok(descendants(widget).some(p=>p.type==='Label' &&
     p.text.includes('Код изменился или ещё не проверен')));
@@ -207,7 +208,7 @@ test('real Panorama script creates a native panel and all controls without a bro
   assert.ok(descendants(widget).some(p=>p.type==='Label' &&
     p.text==='Профиль: Выживание'));
   assert.ok(descendants(widget).some(p=>p.type==='Label' &&
-    p.text.includes('2400') && p.text.includes('[HUD]')));
+    p.text.includes('500') && p.text.includes('[вручную]')));
   assert.ok(descendants(widget).some(p=>p.type==='Label' &&
     p.text.includes('Враги: TestEnemy') && p.text.includes('вручную')));
   blueprintEntry.text=exported.replace('DAA1:','DAA1:1');
