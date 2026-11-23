@@ -84,6 +84,24 @@ See docs/HUD_CONTEXT_AI.md for source evidence, limitations and game acceptance 
 
 See docs/PURCHASE_INTELLIGENCE.md.
 
+## v0.6.0 — Economy Route & Installation Doctor (experimental)
+
+- [x] Multi-step (up to 3) deterministic purchase route using existing current soul budget only
+- [x] Never simulate unearned souls, hidden information, unknown-budget affordability or automatic purchases
+- [x] Account for verified owned components, upgrade discounts, available inventory slots and pinned purchase preference
+- [x] Show remaining souls after each purchase and separately display an optional save-for target
+- [x] Add native in-game button and collapsible purchase-route presentation
+- [x] Repair in-game item search to match validated Russian catalog aliases
+- [x] Read-only Windows installation doctor for stock VPK resource paths, gameinfo, catalog freshness, installed VPK and integrity
+- [x] Unit tests for multi-step budget limits, full inventory, components, unknown currency, integrity and game discovery
+- [x] Panorama interaction smoke tests, CI Windows/Linux
+- [ ] Compile and launch this VPK in the actual Deadlock client and verify the current HUD
+- [ ] Validate that production slot/upgrade metadata matches actual game behavior
+- [ ] Prove safe, permitted live own inventory telemetry and player-attributed events
+- [ ] Enable actual free neural inference after a verified transport & model provider are available
+
+See docs/ECONOMY_ROUTE.md. The read-only doctor is a diagnostic aid, not a substitute for launching the game.
+
 ## Next steps
 
 - Test the latest compiled VPK directly in an actual Deadlock client (Issues #2 and #5)

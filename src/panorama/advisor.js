@@ -1,4 +1,4 @@
-/* Deadlock AI Advisor v0.5.0: native, in-game Panorama UI.
+/* Deadlock AI Advisor v0.6.0: native, in-game Panorama UI.
  * Runtime imports DAA, DAA_TELEMETRY and DAA_CATALOG from VPK build.
  * No browser, external overlay, DLL, process memory reading or hidden-game-data access.
  */
@@ -17,7 +17,7 @@
     soulsMode: 'auto', manualSouls: null, evidence: null,
     threats: {healing:false, control:false, bullets:false, spirit:false},
     owned: [], planPins: [], enemyHeroIds: [], enemyItemIds: [], slots: 9,
-    purchaseEvidence: null, showPurchases: false,
+    purchaseEvidence: null, showPurchases: false, showRoute: false,
     itemSearchOpen: false, itemSearchQuery: '',
     rosterMode: 'auto', rosterEvidence: null,
     pickerOpen: false, pickerPage: 0, lastPurchase: null,
@@ -26,6 +26,7 @@
   var widget, hero, budget, status, threatRow, resultList, evidenceLabel, debugLabel, modeButton;
   var roster, rosterPicker, plannerStatus, slotButton, inventoryRow;
   var recentPurchases, enemyItemsRow, purchaseFeedHeader, searchBox, searchResults;
+  var routeStatus, routeList;
 
   function valid(p) { try { return !!(p && p.IsValid && p.IsValid()); } catch (e) {return false;} }
   function find(id) { try {return hud.FindChildTraverse(id);} catch (e) {return null;} }
@@ -244,6 +245,8 @@
     // offline plan. Future model replies must pass DAA_INFERENCE.validate.
     var decision = DAA_INFERENCE.fallback(DAA_CATALOG,snapshot,'no-model',plan);
     var options = decision.items;
+    if (model.showRoute) displayRoute(DAA_ROUTE.run(DAA_CATALOG,snapshot,3));
+    else text(routeStatus,'');
     text(labelOfButton(slotButton), 'Слоты ' + plan.usedSlots + '/' + plan.slotLimit);
     text(plannerStatus, 'План: ' + model.planPins.length + ' закреплено · ' +
       plan.freeSlots + ' свободных слотов · враги: ' + enemySource() +
@@ -299,6 +302,31 @@
       }
     });
     updateDiagnostic();
+  }
+  function displayRoute(route) {
+    clear(routeList);
+    if (route.status === 'unknown-budget') {
+      text(routeStatus,'Сейчас нельзя рассчитать закупку: баланс неизвестен. Введите души вручную или дождитесь HUD.');
+      return;
+    }
+    text(routeStatus,'План на текущие ' + route.balance +
+      ' душ · расход ' + route.spent + ' · остаток ' + route.remaining +
+      ' · без прогноза будущих доходов');
+    if (!route.steps.length) {
+      el('Label',routeList,'DAAEvidence','На этот баланс не нашлось подтверждённо доступных покупок.');
+    }
+    route.steps.forEach(function(it, i) {
+      var row=el('Panel',routeList,'DAARouteStep');
+      el('Label',row,'DAARouteStepTitle',
+        (i+1)+'. '+it.name+' · '+it.cost+' душ'+
+        (it.componentId ? ' (улучшение)' : ''));
+      el('Label',row,'DAAEvidence','Останется: '+it.remaining);
+    });
+    if (route.saveFor) {
+      el('Label',routeList,'DAASavingTarget','Альтернатива: накопить ещё ' +
+        route.saveFor.shortfall + ' на '+route.saveFor.name+
+        (route.saveFor.pinned ? ' · закреплено' : ''));
+    }
   }
   function displayInventory() {
     clear(inventoryRow);
@@ -434,8 +462,9 @@
       return;
     }
     var found=DAA_CATALOG.items.filter(function(it){
-      return it && it.shopable!==false &&
-        DAA_PURCHASES.canonical(it.name).indexOf(term)>=0 &&
+      if (!it || it.shopable===false) return false;
+      var names=[it.name].concat(Array.isArray(it.aliases)?it.aliases:[]);
+      return names.some(function(name){return DAA_PURCHASES.canonical(name).indexOf(term)>=0;}) &&
         model.enemyItemIds.indexOf(String(it.id))<0;
     });
     found.slice(0,7).forEach(function(it){
@@ -472,7 +501,7 @@
     widget=$.CreatePanel('Panel',hud,'DeadlockAIAdvisorRoot');
     widget.AddClass('DAAWindow');
     var head=el('Panel',widget,'DAAHeader');
-    el('Label',head,'DAATitle','DEADLOCK  /  BUILD ADVISOR  0.5');
+    el('Label',head,'DAATitle','DEADLOCK  /  BUILD ADVISOR  0.6');
     button(head,'×','DAAClose',function(){model.pinned=false;setShown(false);});
     hero=el('Label',widget,'DAAHero','');
     var controls=el('Panel',widget,'DAARow');
@@ -525,6 +554,14 @@
     plannerStatus=el('Label',widget,'DAAEvidence','');
     el('Label',widget,'DAASection','МОИ ПОКУПКИ · РУЧНЫЕ ОТМЕТКИ');
     inventoryRow=el('Panel',widget,'DAAInventory');
+    var routeTools=el('Panel',widget,'DAARow');
+    button(routeTools,'План на эти души','DAAButton',function(){
+      model.showRoute=!model.showRoute;
+      routeList.SetHasClass('DAARouteOpen',model.showRoute);
+      render();
+    });
+    routeStatus=el('Label',widget,'DAAEvidence','');
+    routeList=el('Panel',widget,'DAARouteList');
     el('Label',widget,'DAASection','СЛЕДУЮЩИЕ ПОКУПКИ');
     resultList=el('Panel',widget,'DAAResults');
     status=el('Label',widget,'DAAFooter','');
@@ -571,6 +608,6 @@
     try {$.RegisterKeyBind(hud,DAA_SETTINGS.hotkey||'key_backslash',toggle);}
     catch(e2) {$.Msg('[DAA] keybind unavailable: '+e2);}
   }
-  $.Msg('[DAA] Panorama v0.5.0 loaded; visible purchase feed + offline counter advisor active');
+  $.Msg('[DAA] Panorama v0.6.0 loaded; offline economy route + read-only HUD adapters active');
   $.Schedule(0.5,update);
 })();
