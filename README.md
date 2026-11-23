@@ -2,7 +2,7 @@
 
 **Native Panorama HUD mod for Deadlock.** The player sees and controls the panel **inside the game**, not in an external window. The distributable is a Source 2 VPK: no DLL injection, process-memory reading or shop automation.
 
-**Status: v0.8.0 / experimental.** The native UI and offline recommendation engine are implemented in source. Live neural inference, automatic inventory/enemy-item tracking and end-to-end game verification are NOT implemented. The game HUD now has an experimental read-only opponent-roster adapter, requiring real-client confirmation. A scoped read-only HUD currency adapter now exists, but its in-game numeric behavior remains unverified. Do not treat this build as a finished AI assistant.
+**Status: v0.9.0 / experimental.** The native UI and offline recommendation engine are implemented in source. Live neural inference, automatic inventory/enemy-item tracking and end-to-end game verification are NOT implemented. The game HUD now has an experimental read-only opponent-roster adapter, requiring real-client confirmation. A scoped read-only HUD currency adapter now exists, but its in-game numeric behavior remains unverified. Do not treat this build as a finished AI assistant.
 
 ## Implemented
 
@@ -19,6 +19,9 @@
 - **Optional offline matchup snapshot:** API historical purchased items when facing selected enemy heroes, precomputed before compiling the VPK.
 - **v0.4 read-only opponent roster:** only the TeamEnemy top-bar panel's HeroName labels are examined; invalid, ambiguous or stale data causes immediate safe fallback. Automatic name mapping requires matching English hero names.
 - **Model-output firewall:** optional future neural suggestions cannot inject unknown item IDs, costs or stale-match context; no model is contacted yet.
+- **v0.9 Strategy Lab:** in the native HUD choose **Баланс / Выживание / Натиск / Экономия**. The compare panel shows candidate differences and data availability; profile scores use bounded, explainable catalog slot/price preferences, not guessed win rates.
+- **v0.9 Strategy-Aware Purchase Route:** the existing three-step offline purchase plan follows the selected profile at every simulated purchase; still respects current souls, owned components, capacity and manual pinned priorities.
+- **v0.9 Model Safety:** a future generative model's response becomes stale if the user changes strategies. Inference is **not connected**.
 - **v0.8 Full-Catalog Own Inventory:** native HUD has **Найти мой предмет** with English/Russian names, strict ID validation, per-slot limits and upgrade component replacement; multi-step undo of manual inventory annotations. No in-game purchase is made.
 - **v0.8 HUD Health:** native **Источники HUD** panel reports status and read errors for currency, enemy roster and unattributed shop purchase feed; each source fails independently, so one broken adapter never prevents other sources from updating.
 - **v0.7 VPK Compatibility:** end-to-end offline fixture compiles **all HUD modules** into a three-resource VPK, extracts and compares compiled bytes, then tests install, update, rollback and uninstall. Run `npm run test:build`.
@@ -54,6 +57,8 @@ npm run doctor
 The install command builds and places a VPK in **game/citadel/addons/pak88_dir.vpk** (or your configured number). It may add safe search paths to **gameinfo.gi**; the original is backed up at **cache/gameinfo.gi.bak**. It refuses to overwrite another mod's VPK.
 
 Open the game shop or press backslash. The panel is part of the in-game HUD. Enemy threat flags and purchased items remain **manual**. Enemy hero names can be detected from existing HUD labels only if the running game exposes those labels; the in-game **Выбрать врагов** selector is always available as fallback. Souls can be read from the named HUD label **only if the installed game exposes evaluated numeric text**; otherwise it stays unknown until manually entered. Select another hero if HUD auto-detection fails.
+
+**v0.9 in-game profiles and comparison:** [Strategy Lab](docs/STRATEGY_LAB.md).
 
 **v0.8 inventory controls and evidence health:** [Inventory & HUD Health](docs/INVENTORY_HUD_HEALTH.md).
 
@@ -100,6 +105,7 @@ Valve has not guaranteed that a third-party HUD which gives competitive advice i
 | src/enemy-item-evidence.js | Conservative threat hints from explicitly marked enemy items |
 | src/purchase-route.js | Offline, three-purchase route simulation on currently known souls |
 | src/inventory-state.js | Validated manual inventory state with upgrade and undo history |
+| src/strategy-engine.js | Deterministic four-profile reranker, comparison and evidence audit |
 | src/hud-health.js | Independent fail-closed read-only HUD probes and diagnostic status |
 | tools/doctor.cjs | Read-only Windows installation / VPK / catalog diagnostics |
 | test/build-integration.test.cjs | Network-free full native build/install/uninstall integration tests |

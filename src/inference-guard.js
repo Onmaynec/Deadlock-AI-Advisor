@@ -16,7 +16,8 @@ var DAA_INFERENCE = (function () {
     return [String(s.heroId == null ? '' : s.heroId), ids.join(','),
       owned.join(','), s.souls == null ? '?' : String(s.souls),
       String(s.slots == null ? 9 : s.slots), flags, pins.join(','),
-      String(s.sessionEpoch == null ? 0 : s.sessionEpoch),enemyItems.join(',')].join('|');
+      String(s.sessionEpoch == null ? 0 : s.sessionEpoch),enemyItems.join(','),
+      String(s.strategy == null ? 'balanced' : s.strategy)].join('|');
   }
   function validate(catalog, state, proposal) {
     if (!proposal || typeof proposal !== 'object' || Array.isArray(proposal))

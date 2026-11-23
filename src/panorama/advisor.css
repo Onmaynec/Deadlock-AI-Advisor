@@ -92,3 +92,15 @@
   background-color: #172a32; padding: 8px; margin-top: 6px; max-height: 155px;
   overflow: squish scroll; }
 .DAASourceHealth.DAASourceOpen { visibility: visible; }
+
+/* v0.9 — strategy lab. The comparison is collapsed until explicitly opened. */
+.DAAComparison { width: 100%; flow-children: down; visibility: collapse;
+  max-height: 240px; overflow: squish scroll; margin-bottom: 8px; }
+.DAAComparison.DAACompareOpen { visibility: visible; }
+.DAACompareRow { width: 100%; flow-children: down; padding: 6px 8px;
+  background-color: #1c2e39; border-left: 2px solid #405d6f; margin-bottom: 4px; }
+.DAACompareRow.DAACompareSelected { background-color: #294140;
+  border-left: 3px solid #8bd3b5; }
+.DAACompareName { color: #e5ede1; font-size: 13px; font-weight: bold; }
+.DAACompareCaption { color: #acbbc4; font-size: 12px;
+  white-space: normal; margin-top: 3px; margin-bottom: 3px; }

@@ -34,7 +34,7 @@ test('changes to enemy roster, threat flags, budget or pins invalidate model out
   const s=state(), p=proposal(s,[1]);
   const edits=[
     {enemyHeroIds:[9]},{threats:{healing:false}},{souls:2300},
-    {pinned:['1']},{owned:['2']},{slots:10},{heroId:8},{sessionEpoch:2},{enemyItemIds:[1]}
+    {pinned:['1']},{owned:['2']},{slots:10},{heroId:8},{sessionEpoch:2},{strategy:'survival'},{enemyItemIds:[1]}
   ];
   edits.forEach(change=>{
     assert.equal(guard.validate(catalog,Object.assign({},s,change),p).reason,

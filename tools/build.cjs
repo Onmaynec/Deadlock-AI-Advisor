@@ -14,7 +14,7 @@ const RECORD_PATH=path.join(CACHE,'installed.json');
 const SCRIPT_SOURCES=[
   'src/advisor-core.js','src/telemetry.js','src/roster-telemetry.js',
   'src/purchase-feed.js','src/enemy-item-evidence.js','src/inference-guard.js',
-  'src/purchase-route.js','src/inventory-state.js','src/hud-health.js',
+  'src/purchase-route.js','src/strategy-engine.js','src/inventory-state.js','src/hud-health.js',
   'src/panorama/advisor.js'
 ];
 function sha256(data){return crypto.createHash('sha256').update(data).digest('hex');}

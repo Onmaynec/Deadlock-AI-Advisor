@@ -1,6 +1,6 @@
 /* Deadlock AI Advisor — no dependencies, ES5-compatible core for Panorama.
  * Identical code runs in Node's unit tests and inside the compiled game HUD.
- * v0.6 uses a deterministic, matchup-aware rules engine; no LLM is claimed or silently simulated.
+ * v0.9 uses a deterministic, matchup-aware rules engine; no LLM is claimed or silently simulated.
  */
 var DAA = (function () {
   'use strict';
@@ -54,7 +54,8 @@ var DAA = (function () {
     var state = snapshot || {};
     // Unknown budget must NEVER be interpreted as zero or "can buy".
     var knownBudget = state.souls !== null && state.souls !== undefined &&
-      state.souls !== '' && isFinite(Number(state.souls)) && Number(state.souls) >= 0;
+      state.souls !== '' && typeof state.souls !== 'boolean' &&
+      isFinite(Number(state.souls)) && Number(state.souls) >= 0 && Number(state.souls) <= 99999999;
     var available = knownBudget ? money(state.souls) : null;
     var owned = {}, catalogById = {};
     items.forEach(function(it){catalogById[it.id] = it;});

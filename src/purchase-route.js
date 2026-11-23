@@ -49,7 +49,10 @@ var DAA_ROUTE = (function () {
     var discount = stepIndex === 0 ? 1 : stepIndex === 1 ? 0.63 : 0.39;
     return utility * discount + (item.componentId ? 0.35 : 0);
   }
-  function run(catalog, input, count) {
+  function run(catalog, input, count, ranker) {
+    // The optional ranker is trusted local code (the offline strategy engine),
+    // never a network or model response. Route invariants still validate slots and money.
+    var choose=typeof ranker==='function'?ranker:DAA.recommend;
     var state = input || {};
     var souls = budget(state);
     var owned = itemSet(catalog, state.owned);
@@ -59,7 +62,7 @@ var DAA_ROUTE = (function () {
       slotLimit:cap,ownedCount:owned.length,saveFor:null,explored:0};
     if (souls === null) return result;
 
-    var all = DAA.recommend(catalog, withOwned(state, owned, souls), 80);
+    var all = choose(catalog, withOwned(state, owned, souls), 80);
     result.saveFor = savingTarget(all, souls);
     var maxSteps = Math.min(3, Math.max(1, DAA.money(count == null ? 3 : count)));
     var beam = [{owned:owned, money:souls,steps:[],reward:0,spent:0}];
@@ -68,7 +71,7 @@ var DAA_ROUTE = (function () {
       var next = [];
       for(j=0;j<beam.length;j++) {
         var node = beam[j];
-        var options = DAA.recommend(catalog, withOwned(state,node.owned,node.money),80);
+        var options = choose(catalog, withOwned(state,node.owned,node.money),80);
         // Keep top affordable candidates; no predictions about future soul gains.
         var used=0;
         for(k=0;k<options.length && used<7;k++) {
