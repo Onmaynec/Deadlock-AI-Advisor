@@ -103,6 +103,7 @@ async function main() {
     '\n' + fs.readFileSync(path.join(ROOT,'src/purchase-feed.js'),'utf8') +
     '\n' + fs.readFileSync(path.join(ROOT,'src/enemy-item-evidence.js'),'utf8') +
     '\n' + fs.readFileSync(path.join(ROOT,'src/inference-guard.js'),'utf8') +
+    '\n' + fs.readFileSync(path.join(ROOT,'src/purchase-route.js'),'utf8') +
     '\n' + fs.readFileSync(path.join(ROOT,'src/panorama/advisor.js'),'utf8');
   const files = [
     {path:'panorama/layout/hud.vxml_c',data:compileXml(injectHud(await stockHud(game),scriptPath),

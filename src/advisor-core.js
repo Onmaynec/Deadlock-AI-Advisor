@@ -1,6 +1,6 @@
 /* Deadlock AI Advisor — no dependencies, ES5-compatible core for Panorama.
  * Identical code runs in Node's unit tests and inside the compiled game HUD.
- * v0.3 uses a deterministic, matchup-aware rules engine; no LLM is claimed or silently simulated.
+ * v0.6 uses a deterministic, matchup-aware rules engine; no LLM is claimed or silently simulated.
  */
 var DAA = (function () {
   'use strict';
@@ -154,12 +154,20 @@ var DAA = (function () {
       return b.score - a.score || Number(b.affordable === true) - Number(a.affordable === true) ||
         a.cost - b.cost || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);
     });
-    return scored.slice(0, Math.max(0, Math.min(12, money(limit == null ? 5 : limit))));
+    return scored.slice(0, Math.max(0, Math.min(80, money(limit == null ? 5 : limit))));
   }
   function plan(catalog, snapshot, count) {
     var state = snapshot || {};
-    var available = state.souls == null ? null : money(state.souls);
-    var owned = (state.owned || []).map(function(x){return String(x);});
+    var available = state.souls === null || state.souls === undefined ||
+      state.souls === '' || typeof state.souls === 'boolean' ||
+      !isFinite(Number(state.souls)) || Number(state.souls) < 0 ?
+      null : money(state.souls);
+    var known = {}, seen = {}, owned = [];
+    normalise(catalog).forEach(function(it) {known[it.id] = true;});
+    (Array.isArray(state.owned) ? state.owned : []).forEach(function(x) {
+      var id=String(x);
+      if(known[id] && !seen[id]) {owned.push(id);seen[id]=true;}
+    });
     var slots = Math.max(9, Math.min(12, money(state.slots == null ? 9 : state.slots)));
     var rows = recommend(catalog, state, count == null ? 6 : count);
     return {

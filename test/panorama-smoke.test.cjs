@@ -74,7 +74,7 @@ test('real Panorama script creates a native panel and all controls without a bro
       heroMatchups:{'1':{'2':{'1':500}}},
       items:[
         {id:1,name:'Healbane',slot:'spirit',cost:1200,shopable:true},
-        {id:2,name:'Metal Skin',slot:'vitality',cost:3000,shopable:true},
+        {id:2,name:'Metal Skin',slot:'vitality',cost:3000,shopable:true,aliases:['Металлическая кожа']},
         {id:3,name:'Plain Gun',slot:'weapon',cost:1500,shopable:true},
         {id:4,name:'Healing Nova',slot:'vitality',cost:900,shopable:true}
       ]
@@ -87,8 +87,9 @@ test('real Panorama script creates a native panel and all controls without a bro
   const guard=fs.readFileSync(path.join(__dirname,'..','src','inference-guard.js'),'utf8');
   const feed=fs.readFileSync(path.join(__dirname,'..','src','purchase-feed.js'),'utf8');
   const evidence=fs.readFileSync(path.join(__dirname,'..','src','enemy-item-evidence.js'),'utf8');
+  const route=fs.readFileSync(path.join(__dirname,'..','src','purchase-route.js'),'utf8');
   const hud=fs.readFileSync(path.join(__dirname,'..','src','panorama','advisor.js'),'utf8');
-  vm.runInContext(core+'\n'+telemetry+'\n'+roster+'\n'+feed+'\n'+evidence+'\n'+guard+'\n'+hud,context,{timeout:2000});
+  vm.runInContext(core+'\n'+telemetry+'\n'+roster+'\n'+feed+'\n'+evidence+'\n'+guard+'\n'+route+'\n'+hud,context,{timeout:2000});
   const widget=root.FindChildTraverse('DeadlockAIAdvisorRoot');
   assert.ok(widget,'HUD widget exists');
   assert.equal(widget.BHasClass('DAAOpen'),false);
@@ -112,10 +113,15 @@ test('real Panorama script creates a native panel and all controls without a bro
   press('Найти предмет');
   const search=descendants(widget).find(p=>p.type==='TextEntry');
   assert.ok(search);
-  search.text='Metal';
+  search.text='Металлическая';
   search.events.ontextentrychange();
   press('Отметить у врага: Metal Skin');
   assert.ok(descendants(widget).some(p=>p.type==='Label' && p.text.includes('У врагов (вручную): 2')));
+  press('План на эти души');
+  assert.ok(descendants(widget).some(p=>p.type==='Label' &&
+    p.text.includes('План на текущие 2400 душ')));
+  assert.ok(descendants(widget).some(p=>p.type==='Label' &&
+    p.text.includes('Останется:')));
   press('Лечение');
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('восстановления здоровья')));
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('2400')&&p.text.includes('[HUD]')));
