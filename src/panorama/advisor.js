@@ -1,4 +1,4 @@
-/* Deadlock AI Advisor v0.9.0: native, in-game Panorama UI.
+/* Deadlock AI Advisor v1.0.0: native, in-game Panorama UI.
  * Runtime imports DAA, DAA_TELEMETRY and DAA_CATALOG from VPK build.
  * No browser, external overlay, DLL, process memory reading or hidden-game-data access.
  */
@@ -24,6 +24,7 @@
     planPins: [], enemyHeroIds: [], enemyItemIds: [], slots: 9,
     purchaseEvidence: null, showPurchases: false, showRoute: false,
     strategy: 'balanced', comparisonOpen: false,
+    blueprintOpen:false, blueprintPending:null, blueprintMessage:'',
     itemSearchOpen: false, itemSearchQuery: '',
     rosterMode: 'auto', rosterEvidence: null,
     pickerOpen: false, pickerPage: 0, lastPurchase: null,
@@ -34,6 +35,7 @@
   var recentPurchases, enemyItemsRow, purchaseFeedHeader, searchBox, searchResults;
   var routeStatus, routeList;
   var strategyButton, strategyEvidence, comparisonPanel;
+  var blueprintPanel, blueprintEntry, blueprintStatus;
   var inventorySearchBox, inventorySearchResults, inventoryNoticeLabel, sourceHealthPanel;
 
   function valid(p) { try { return !!(p && p.IsValid && p.IsValid()); } catch (e) {return false;} }
@@ -69,6 +71,8 @@
     model.threats = {healing:false,control:false,bullets:false,spirit:false};
     model.owned = [];
     model.inventoryHistory = [];
+    model.blueprintPending=null;
+    model.blueprintMessage='';
     model.inventorySearchOpen = false;
     model.inventoryQuery = '';
     model.inventoryNotice = '';
@@ -287,6 +291,7 @@
       (inferred.signals.length ? ' · эвристик угроз: ' + inferred.signals.length : '') +
       (heroStats ? ' · статистика героя: да' : ' · статистика героя: нет'));
     text(inventoryNoticeLabel,model.inventoryNotice);
+    displayBlueprint();
     clear(resultList);
     if (!options.length) {
       el('Label',resultList,'DAAEmpty',plan.freeSlots === 0 ?
@@ -587,6 +592,104 @@
     if(!found.length) el('Label',searchResults,'DAAEvidence',
       'В текущем каталоге совпадений нет');
   }
+  function blueprintState() {
+    var selected=currentHero();
+    return {heroId:selected?String(selected.id):'',
+      enemyHeroIds:activeEnemyIds(),owned:model.owned,
+      pinned:model.planPins,enemyItemIds:model.enemyItemIds,
+      slots:model.slots,threats:model.threats,strategy:model.strategy};
+  }
+  function displayBlueprint() {
+    if(!valid(blueprintPanel))return;
+    blueprintPanel.SetHasClass('DAABlueprintOpen',model.blueprintOpen);
+    text(blueprintStatus,model.blueprintMessage);
+  }
+  function createBlueprint() {
+    try {
+      var result=DAA_BLUEPRINT.encode(DAA_CATALOG,blueprintState());
+      blueprintEntry.text=result.code;
+      model.blueprintPending=null;
+      model.blueprintMessage='Код создан. Выделите текст и нажмите Ctrl+C, либо кнопку «Копировать».';
+    } catch(e) {
+      model.blueprintPending=null;
+      model.blueprintMessage='Нельзя создать код: текущие пометки не проходят проверку каталога или слотов.';
+    }
+    render();
+  }
+  function copyBlueprint() {
+    var code=String(blueprintEntry.text||'');
+    if(!code) {
+      model.blueprintMessage='Сначала создайте код сборки.';
+    } else if(typeof $.CopyStringToClipboard==='function') {
+      try {
+        $.CopyStringToClipboard(code);
+        model.blueprintMessage='Отправлен запрос на копирование. Можно также выделить код вручную.';
+      } catch(e) {
+        model.blueprintMessage='Автокопирование недоступно. Выделите код в поле и нажмите Ctrl+C.';
+      }
+    } else {
+      model.blueprintMessage='Выделите текст кода и нажмите Ctrl+C. Clipboard API недоступен.';
+    }
+    render();
+  }
+  function checkBlueprint() {
+    var result=DAA_BLUEPRINT.decode(DAA_CATALOG,blueprintEntry.text);
+    if(!result.ok) {
+      model.blueprintPending=null;
+      model.blueprintMessage='Код отклонён: '+result.error;
+    } else {
+      model.blueprintPending=result;
+      var s=result.snapshot, heroName='без героя';
+      var selected=s.heroId?heroById(s.heroId):null;
+      if(selected)heroName=selected.name;
+      var current=currentHero(),different=current&&s.heroId &&
+        String(current.id)!==s.heroId;
+      model.blueprintMessage='Проверено. Герой: '+heroName+
+        ' · предметов: '+s.owned.length+' · врагов: '+s.enemyHeroIds.length+
+        ' · приоритетов: '+s.pinned.length+' · стратегия: '+
+        DAA_STRATEGY.profile(s.strategy).name+
+        (different?' · ВНИМАНИЕ: герой отличается от текущего!':'')+
+        ' · деньги не импортируются. Нажмите «Применить код».';
+    }
+    render();
+  }
+  function applyBlueprint() {
+    var raw=String(blueprintEntry.text||'').trim();
+    if(!model.blueprintPending||model.blueprintPending.code!==raw) {
+      model.blueprintPending=null;
+      model.blueprintMessage='Код изменился или ещё не проверен. Сначала нажмите «Проверить код».';
+      render();return;
+    }
+    // Validate twice: catalog and input may have changed since initial preview.
+    var checked=DAA_BLUEPRINT.decode(DAA_CATALOG,raw);
+    if(!checked.ok) {
+      model.blueprintPending=null;
+      model.blueprintMessage='Код больше не проходит проверку. Действия отменены.';
+      render();return;
+    }
+    var s=checked.snapshot;
+    // The user explicitly confirms replacing ALL local build annotations.
+    // No HUD telemetry, game inventory or actual shop state is modified.
+    model.sessionEpoch++;
+    model.manualHero=s.heroId;
+    model.rosterMode='manual';
+    model.rosterEvidence=null;
+    model.enemyHeroIds=s.enemyHeroIds.slice();
+    model.enemyItemIds=s.enemyItemIds.slice();
+    model.owned=s.owned.slice();
+    model.inventoryHistory=[];
+    model.planPins=s.pinned.slice();
+    model.threats=s.threats;
+    model.slots=s.slots;
+    model.strategy=s.strategy;
+    model.lastPurchase=null;
+    model.inventoryNotice='Чертёж применён только к пометкам советника. В игре ничего не куплено.';
+    model.blueprintPending=null;
+    model.blueprintMessage='Сборка импортирована. Текущий баланс душ сохранён без изменений.';
+    model.pickerOpen=false;
+    model.last='';
+    render();
+  }
   function render() {
     if(!valid(widget)) return;
     refresh();
@@ -616,7 +719,7 @@
     widget=$.CreatePanel('Panel',hud,'DeadlockAIAdvisorRoot');
     widget.AddClass('DAAWindow');
     var head=el('Panel',widget,'DAAHeader');
-    el('Label',head,'DAATitle','DEADLOCK  /  BUILD ADVISOR  0.9');
+    el('Label',head,'DAATitle','DEADLOCK  /  BUILD ADVISOR  1.0');
     button(head,'×','DAAClose',function(){model.pinned=false;setShown(false);});
     hero=el('Label',widget,'DAAHero','');
     var controls=el('Panel',widget,'DAARow');
@@ -688,6 +791,27 @@
     });
     strategyEvidence=el('Label',widget,'DAAEvidence','');
     comparisonPanel=el('Panel',widget,'DAAComparison');
+    el('Label',widget,'DAASection','ЧЕРТЁЖ СБОРКИ · ПЕРЕНОС БЕЗ СЕТИ');
+    var blueprintTools=el('Panel',widget,'DAARow');
+    button(blueprintTools,'Код сборки','DAAButton',function(){
+      model.blueprintOpen=!model.blueprintOpen;render();
+    });
+    blueprintPanel=el('Panel',widget,'DAABlueprintPanel');
+    el('Label',blueprintPanel,'DAAEvidence',
+      'Код содержит только героя, ручные предметы, врагов, приоритеты и стратегию. Души не сохраняются.');
+    blueprintEntry=el('TextEntry',blueprintPanel,'DAABlueprintInput');
+    try{blueprintEntry.SetMaxChars(DAA_BLUEPRINT.maxLength);}catch(e){}
+    blueprintEntry.SetPanelEvent('ontextentrychange',function(){
+      model.blueprintPending=null;
+      model.blueprintMessage='Код изменился. Нажмите «Проверить код» перед применением.';
+      text(blueprintStatus,model.blueprintMessage);
+    });
+    var blueprintActions=el('Panel',blueprintPanel,'DAARow');
+    button(blueprintActions,'Создать код','DAAButton',createBlueprint);
+    button(blueprintActions,'Копировать','DAAButton',copyBlueprint);
+    button(blueprintActions,'Проверить код','DAAButton',checkBlueprint);
+    button(blueprintPanel,'Применить код','DAAButton',applyBlueprint);
+    blueprintStatus=el('Label',blueprintPanel,'DAAEvidence','');
     var routeTools=el('Panel',widget,'DAARow');
     button(routeTools,'План на эти души','DAAButton',function(){
       model.showRoute=!model.showRoute;
@@ -755,6 +879,6 @@
     try {$.RegisterKeyBind(hud,DAA_SETTINGS.hotkey||'key_backslash',toggle);}
     catch(e2) {$.Msg('[DAA] keybind unavailable: '+e2);}
   }
-  $.Msg('[DAA] Panorama v0.9.0 loaded; deterministic strategy compare and offline route active');
+  $.Msg('[DAA] Panorama v1.0.0 loaded; portable build blueprint codes and offline advisor active');
   $.Schedule(0.5,update);
 })();

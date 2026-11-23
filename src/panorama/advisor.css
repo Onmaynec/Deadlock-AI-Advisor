@@ -104,3 +104,13 @@
 .DAACompareName { color: #e5ede1; font-size: 13px; font-weight: bold; }
 .DAACompareCaption { color: #acbbc4; font-size: 12px;
   white-space: normal; margin-top: 3px; margin-bottom: 3px; }
+
+/* v1.0 — opt-in blueprint import/export; hidden when not in use. */
+.DAABlueprintPanel { width: 100%; flow-children: down; visibility: collapse;
+  padding: 8px 8px; background-color: #172b35; border: 1px solid #38586a;
+  margin-bottom: 8px; }
+.DAABlueprintPanel.DAABlueprintOpen { visibility: visible; }
+.DAABlueprintInput { width: 98%; height: 34px; background-color: #0e1b28;
+  border: 1px solid #61788b; padding: 4px 8px;
+  color: #ebf1e9; font-size: 13px; }
+.DAABlueprintInput:focus { border: 1px solid #89c5bb; }
