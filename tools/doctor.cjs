@@ -27,6 +27,9 @@ function inspect(args={}) {
   const target=path.join(citadel,'addons',filename);
   const built=path.join(out,filename);
   const recordFile=path.join(cache,'installed.json');
+  const manifestFile=path.join(out,'build_manifest.json');
+  const hudCacheMeta=path.join(cache,'stock_hud_meta.json');
+  const hudCacheFile=path.join(cache,'stock_hud.xml');
   const catalogFile=path.join(root,'generated','catalog.json');
   if(!fs.existsSync(stock)) add('error','stock-vpk-missing','Нет базового pak01_dir.vpk');
   else {
@@ -64,7 +67,34 @@ function inspect(args={}) {
     } catch(e){add('error','catalog-invalid','Повреждён generated/catalog.json: '+e.message);}
   }
   if(!fs.existsSync(built)) add('warn','no-built-vpk','Нет готового VPK в out; команда npm run build создаст его');
-  else add('ok','built-vpk','Собранный VPK присутствует');
+  else {
+    add('ok','built-vpk','Собранный VPK присутствует');
+    if(!fs.existsSync(manifestFile))add('warn','manifest-missing','Нет build_manifest.json: сборка старой версии');
+    else {
+      try {
+        const manifest=JSON.parse(fs.readFileSync(manifestFile,'utf8'));
+        if(manifest.addonSha256!==hash(built))
+          add('error','build-hash-mismatch','Собранный VPK не совпадает с manifest SHA-256');
+        else add('ok','build-manifest-valid','Контрольная сумма сборки подтверждена');
+        if(fs.existsSync(stock) && manifest.gameVpkSha256 &&
+            manifest.gameVpkSha256!==hash(stock))
+          add('warn','build-stock-changed','Базовый VPK изменился после сборки; нужно пересобрать');
+      }catch(e){add('error','build-manifest-invalid','Манифест сборки не читается: '+e.message);}
+    }
+  }
+  if(fs.existsSync(hudCacheMeta)||fs.existsSync(hudCacheFile)) {
+    if(!fs.existsSync(hudCacheMeta)||!fs.existsSync(hudCacheFile))
+      add('warn','stock-cache-incomplete','Кеш HUD неполный; он будет обновлён при следующей онлайн-сборке');
+    else {
+      try {
+        const meta=JSON.parse(fs.readFileSync(hudCacheMeta,'utf8'));
+        if(meta.xmlSha256!==hash(hudCacheFile) ||
+            (fs.existsSync(stock) && meta.gameVpkSha256!==hash(stock)))
+          add('warn','stock-cache-stale','Кеш HUD не подтверждён для текущего VPK');
+        else add('ok','stock-cache-verified','HUD cache checksum matches current stock directory VPK');
+      } catch(e) {add('warn','stock-cache-invalid','Кеш HUD повреждён: '+e.message);}
+    }
+  }
   let record=null;
   if(fs.existsSync(recordFile)){
     try{record=JSON.parse(fs.readFileSync(recordFile,'utf8'));}
@@ -77,6 +107,9 @@ function inspect(args={}) {
     else if(typeof record.sha256!=='string'||hash(target)!==record.sha256)
       add('error','installed-hash-mismatch','VPK изменён после установки; автоматическое удаление небезопасно');
     else add('ok','installed-hash-ok','Установленный VPK совпадает с контролем целостности');
+    if(record && record.sourceVpkSha256 && fs.existsSync(stock) &&
+       record.sourceVpkSha256!==hash(stock))
+      add('warn','installed-stock-changed','Версия базового VPK изменилась после установки мода');
     try {
       const idx=readVpkIndex(target);
       if(!idx.has('panorama/layout/hud.vxml_c') ||
@@ -89,7 +122,7 @@ function inspect(args={}) {
       add('warn','game-newer-than-mod','Файлы игры обновлены после установки мода; пересобери VPK');
   }
   return {healthy:!results.some(x=>x.level==='error'),gameFound:true,
-    checks:results,version:'0.6.0'};
+    checks:results,version:'0.7.0'};
 }
 function main() {
   const configPath=path.join(ROOT,'config.json');
