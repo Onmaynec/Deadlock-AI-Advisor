@@ -1,4 +1,4 @@
-/* Deadlock AI Advisor v0.8.0: native, in-game Panorama UI.
+/* Deadlock AI Advisor v0.9.0: native, in-game Panorama UI.
  * Runtime imports DAA, DAA_TELEMETRY and DAA_CATALOG from VPK build.
  * No browser, external overlay, DLL, process memory reading or hidden-game-data access.
  */
@@ -23,6 +23,7 @@
     inventoryQuery:'', inventoryNotice:'', showSourceHealth:false,
     planPins: [], enemyHeroIds: [], enemyItemIds: [], slots: 9,
     purchaseEvidence: null, showPurchases: false, showRoute: false,
+    strategy: 'balanced', comparisonOpen: false,
     itemSearchOpen: false, itemSearchQuery: '',
     rosterMode: 'auto', rosterEvidence: null,
     pickerOpen: false, pickerPage: 0, lastPurchase: null,
@@ -32,6 +33,7 @@
   var roster, rosterPicker, plannerStatus, slotButton, inventoryRow;
   var recentPurchases, enemyItemsRow, purchaseFeedHeader, searchBox, searchResults;
   var routeStatus, routeList;
+  var strategyButton, strategyEvidence, comparisonPanel;
   var inventorySearchBox, inventorySearchResults, inventoryNoticeLabel, sourceHealthPanel;
 
   function valid(p) { try { return !!(p && p.IsValid && p.IsValid()); } catch (e) {return false;} }
@@ -249,14 +251,24 @@
       heroId:selected ? selected.id : '', souls:budgetNow,
       owned:model.owned, threats:currentThreats(),
       pinned:model.planPins, enemyHeroIds:activeEnemyIds(), slots:model.slots,
-      enemyItemIds:model.enemyItemIds, sessionEpoch:model.sessionEpoch
+      enemyItemIds:model.enemyItemIds, sessionEpoch:model.sessionEpoch,
+      strategy:model.strategy
     };
     var plan = DAA.plan(DAA_CATALOG,snapshot,6);
     // No neural provider is connected in v0.4: always use the validated
     // offline plan. Future model replies must pass DAA_INFERENCE.validate.
     var decision = DAA_INFERENCE.fallback(DAA_CATALOG,snapshot,'no-model',plan);
-    var options = decision.items;
-    if (model.showRoute) displayRoute(DAA_ROUTE.run(DAA_CATALOG,snapshot,3));
+    var options = model.strategy === 'balanced' ? decision.items :
+      DAA_STRATEGY.rank(DAA_CATALOG,snapshot,model.strategy,6);
+    var profile=DAA_STRATEGY.profile(model.strategy);
+    var audit=DAA_STRATEGY.audit(DAA_CATALOG,snapshot);
+    text(labelOfButton(strategyButton),'Профиль: '+profile.name);
+    text(strategyEvidence,'Локальный профиль (без LLM): '+profile.description+
+      ' · герой: '+(audit.heroKnown ? 'из каталога':'не подтверждён')+
+      ' · статистика врагов: '+audit.matchupsCovered+'/'+audit.enemyCount);
+    displayComparison(snapshot);
+    if (model.showRoute) displayRoute(DAA_ROUTE.run(DAA_CATALOG,snapshot,3,
+      function(cat,s,limit){return DAA_STRATEGY.rank(cat,s,model.strategy,limit);}));
     else text(routeStatus,'');
     text(labelOfButton(slotButton), 'Слоты ' + plan.usedSlots + '/' + plan.slotLimit);
     text(plannerStatus, 'План: ' + model.planPins.length + ' закреплено · ' +
@@ -306,13 +318,40 @@
     });
     updateDiagnostic();
   }
+  function displayComparison(snapshot) {
+    if(!valid(comparisonPanel))return;
+    comparisonPanel.SetHasClass('DAACompareOpen',model.comparisonOpen);
+    clear(comparisonPanel);
+    if(!model.comparisonOpen)return;
+    var comparison=DAA_STRATEGY.compare(DAA_CATALOG,snapshot);
+    comparison.profiles.forEach(function(p) {
+      var row=el('Panel',comparisonPanel,'DAACompareRow');
+      row.SetHasClass('DAACompareSelected',p.id===model.strategy);
+      var candidate=p.affordable||p.first;
+      el('Label',row,'DAACompareName',p.name+(p.id===model.strategy?' · выбран':''));
+      el('Label',row,'DAACompareCaption',
+        candidate ? (candidate.name+' · '+candidate.cost+' душ'+
+          (candidate.affordable===true?' · подтверждённо доступно':
+           candidate.affordable===null?' · баланс неизвестен':' · накопить')) :
+          'Нет кандидатов в текущем каталоге');
+      if(p.id!==model.strategy)
+        button(row,'Выбрать '+p.name,'DAAButton',function(){
+          model.strategy=p.id;render();
+        });
+    });
+    if(comparison.evidence.warnings.length)
+      el('Label',comparisonPanel,'DAAEvidence',
+        'Ограничения: '+comparison.evidence.warnings.join(' · '));
+    el('Label',comparisonPanel,'DAAEvidence',
+      'Это сравнение правил приоритета, а не прогноз винрейта или действий игроков.');
+  }
   function displayRoute(route) {
     clear(routeList);
     if (route.status === 'unknown-budget') {
       text(routeStatus,'Сейчас нельзя рассчитать закупку: баланс неизвестен. Введите души вручную или дождитесь HUD.');
       return;
     }
-    text(routeStatus,'План на текущие ' + route.balance +
+    text(routeStatus,'Маршрут ('+DAA_STRATEGY.profile(model.strategy).name+') на текущие ' + route.balance +
       ' душ · расход ' + route.spent + ' · остаток ' + route.remaining +
       ' · без прогноза будущих доходов');
     if (!route.steps.length) {
@@ -577,7 +616,7 @@
     widget=$.CreatePanel('Panel',hud,'DeadlockAIAdvisorRoot');
     widget.AddClass('DAAWindow');
     var head=el('Panel',widget,'DAAHeader');
-    el('Label',head,'DAATitle','DEADLOCK  /  BUILD ADVISOR  0.8');
+    el('Label',head,'DAATitle','DEADLOCK  /  BUILD ADVISOR  0.9');
     button(head,'×','DAAClose',function(){model.pinned=false;setShown(false);});
     hero=el('Label',widget,'DAAHero','');
     var controls=el('Panel',widget,'DAARow');
@@ -635,6 +674,20 @@
     });
     try{input.SetMaxChars(48);}catch(e){}
     inventorySearchResults=el('Panel',inventorySearchBox,'DAAInventorySearchResults');
+    el('Label',widget,'DAASection','СТРАТЕГИЯ БИЛДА · ОФЛАЙН');
+    var strategyTools=el('Panel',widget,'DAARow');
+    strategyButton=button(strategyTools,'Профиль: Баланс','DAAButton',function(){
+      var profiles=DAA_STRATEGY.profiles,at=0;
+      for(var i=0;i<profiles.length;i++)
+        if(profiles[i].id===model.strategy)at=i;
+      model.strategy=profiles[(at+1)%profiles.length].id;
+      render();
+    });
+    button(strategyTools,'Сравнить стратегии','DAAButton',function(){
+      model.comparisonOpen=!model.comparisonOpen;render();
+    });
+    strategyEvidence=el('Label',widget,'DAAEvidence','');
+    comparisonPanel=el('Panel',widget,'DAAComparison');
     var routeTools=el('Panel',widget,'DAARow');
     button(routeTools,'План на эти души','DAAButton',function(){
       model.showRoute=!model.showRoute;
@@ -702,6 +755,6 @@
     try {$.RegisterKeyBind(hud,DAA_SETTINGS.hotkey||'key_backslash',toggle);}
     catch(e2) {$.Msg('[DAA] keybind unavailable: '+e2);}
   }
-  $.Msg('[DAA] Panorama v0.8.0 loaded; manual inventory manager and isolated HUD probes active');
+  $.Msg('[DAA] Panorama v0.9.0 loaded; deterministic strategy compare and offline route active');
   $.Schedule(0.5,update);
 })();

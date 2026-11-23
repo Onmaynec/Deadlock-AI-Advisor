@@ -88,10 +88,11 @@ test('real Panorama script creates a native panel and all controls without a bro
   const feed=fs.readFileSync(path.join(__dirname,'..','src','purchase-feed.js'),'utf8');
   const evidence=fs.readFileSync(path.join(__dirname,'..','src','enemy-item-evidence.js'),'utf8');
   const route=fs.readFileSync(path.join(__dirname,'..','src','purchase-route.js'),'utf8');
+  const strategy=fs.readFileSync(path.join(__dirname,'..','src','strategy-engine.js'),'utf8');
   const inventory=fs.readFileSync(path.join(__dirname,'..','src','inventory-state.js'),'utf8');
   const health=fs.readFileSync(path.join(__dirname,'..','src','hud-health.js'),'utf8');
   const hud=fs.readFileSync(path.join(__dirname,'..','src','panorama','advisor.js'),'utf8');
-  vm.runInContext(core+'\n'+telemetry+'\n'+roster+'\n'+feed+'\n'+evidence+'\n'+guard+'\n'+route+'\n'+inventory+'\n'+health+'\n'+hud,context,{timeout:2000});
+  vm.runInContext(core+'\n'+telemetry+'\n'+roster+'\n'+feed+'\n'+evidence+'\n'+guard+'\n'+route+'\n'+strategy+'\n'+inventory+'\n'+health+'\n'+hud,context,{timeout:2000});
   const widget=root.FindChildTraverse('DeadlockAIAdvisorRoot');
   assert.ok(widget,'HUD widget exists');
   assert.equal(widget.BHasClass('DAAOpen'),false);
@@ -119,9 +120,16 @@ test('real Panorama script creates a native panel and all controls without a bro
   search.events.ontextentrychange();
   press('Отметить у врага: Metal Skin');
   assert.ok(descendants(widget).some(p=>p.type==='Label' && p.text.includes('У врагов (вручную): 2')));
+  press('Сравнить стратегии');
+  assert.ok(descendants(widget).some(p=>p.type==='Label' && p.text.includes('Баланс · выбран')));
+  assert.ok(descendants(widget).some(p=>p.type==='Label' && p.text.includes('Выживание')));
+  press('Выбрать Выживание');
+  assert.ok(descendants(widget).some(p=>p.type==='Label' && p.text==='Профиль: Выживание'));
+  assert.ok(descendants(widget).some(p=>p.type==='Label' &&
+    p.text.includes('профиль повышает приоритет vitality')));
   press('План на эти души');
   assert.ok(descendants(widget).some(p=>p.type==='Label' &&
-    p.text.includes('План на текущие 2400 душ')));
+    p.text.includes('Маршрут (Выживание) на текущие 2400 душ')));
   assert.ok(descendants(widget).some(p=>p.type==='Label' &&
     p.text.includes('Останется:')));
   press('Найти мой предмет');
@@ -172,6 +180,7 @@ test('real Panorama script creates a native panel and all controls without a bro
   press('Слоты 0/9');
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('Слоты 0/10')));
   press('Новый матч');
+  assert.ok(descendants(widget).some(p=>p.type==='Label' && p.text==='Профиль: Выживание'));
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('Враги: HUD не определил состав')));
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('СЛЕДУЮЩИЕ ПОКУПКИ')));
 });

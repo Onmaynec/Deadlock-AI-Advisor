@@ -123,3 +123,11 @@ test('plan keeps budget unknown and clamps user-input slot limits',()=>{
   assert.equal(r.slotLimit,12);
   assert.ok(r.items.every(x=>x.affordable===null));
 });
+
+test('boolean or out-of-range souls do not imply a confirmed budget',()=>{
+  const cat={items:[{id:1,name:'Normal',cost:800,slot:'weapon',shopable:true}]};
+  for(const value of [false,true,100000000,Infinity]) {
+    const row=core.recommend(cat,{souls:value},1)[0];
+    assert.equal(row.affordable,null,String(value));
+  }
+});

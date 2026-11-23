@@ -139,6 +139,25 @@ See docs/VPK_COMPATIBILITY.md.
 
 See docs/INVENTORY_HUD_HEALTH.md.
 
+## v0.9.0 — Strategy Lab (experimental)
+
+- [x] Four transparent offline item strategies: balanced, survival, pressure, budget
+- [x] Source-preserving score modifiers based only on catalog slot and price facts
+- [x] Profile selection and comparison controls inside the native Panorama HUD
+- [x] Display first affordable candidate or explicit unconfirmed/insufficient balance
+- [x] Display hero and matchup sample coverage limitations without fake win-rate claims
+- [x] Apply selected strategy to every step of the 3-purchase offline route
+- [x] Preserve current slot, component, budget, pinned priority and inventory legality rules
+- [x] Include profile in future generative response context signature
+- [x] Reject boolean/out-of-range budget values in core recommendation engine
+- [x] Add strategy, audit, route and Panorama smoke regression tests
+- [x] Include strategy engine in Source 2 VPK and run Windows/Linux CI
+- [ ] Verify full HUD interaction with real Deadlock on Windows
+- [ ] Connect a permitted free local/hosted neural inference provider after in-game transport validation
+- [ ] Improve sample coverage and source confidence from validated match data, never fabricated telemetry
+
+See docs/STRATEGY_LAB.md.
+
 ## Next steps
 
 - Test the latest compiled VPK directly in an actual Deadlock client (Issues #2 and #5)
