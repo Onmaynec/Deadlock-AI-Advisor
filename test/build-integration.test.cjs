@@ -59,7 +59,7 @@ test('end-to-end: native Panorama bundle compiles, packages, extracts unchanged'
   assert.match(xml,/deadlock_ai_advisor\.vcss_c/);
   const js=readBlocks(extractVpkFile(result.built,'panorama/scripts/deadlock_ai_advisor.vts_c'))
     .blocks.DATA.toString('utf8');
-  for(const key of ['DAA_PURCHASES','DAA_TELEMETRY','DAA_ROSTER','DAA_ROUTE','DAA_SETTINGS'])
+  for(const key of ['DAA_PURCHASES','DAA_TELEMETRY','DAA_ROSTER','DAA_ROUTE','DAA_BLUEPRINT','DAA_SETTINGS'])
     assert.ok(js.includes(key),'missing script section '+key);
   assert.equal(fs.existsSync(path.join(a.citadel,'addons','pak88_dir.vpk')),false);
   assert.equal(fs.readFileSync(a.gameinfo,'utf8').includes('citadel/addons'),false);

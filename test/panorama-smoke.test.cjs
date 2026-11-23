@@ -89,10 +89,11 @@ test('real Panorama script creates a native panel and all controls without a bro
   const evidence=fs.readFileSync(path.join(__dirname,'..','src','enemy-item-evidence.js'),'utf8');
   const route=fs.readFileSync(path.join(__dirname,'..','src','purchase-route.js'),'utf8');
   const strategy=fs.readFileSync(path.join(__dirname,'..','src','strategy-engine.js'),'utf8');
+  const blueprint=fs.readFileSync(path.join(__dirname,'..','src','build-blueprint.js'),'utf8');
   const inventory=fs.readFileSync(path.join(__dirname,'..','src','inventory-state.js'),'utf8');
   const health=fs.readFileSync(path.join(__dirname,'..','src','hud-health.js'),'utf8');
   const hud=fs.readFileSync(path.join(__dirname,'..','src','panorama','advisor.js'),'utf8');
-  vm.runInContext(core+'\n'+telemetry+'\n'+roster+'\n'+feed+'\n'+evidence+'\n'+guard+'\n'+route+'\n'+strategy+'\n'+inventory+'\n'+health+'\n'+hud,context,{timeout:2000});
+  vm.runInContext(core+'\n'+telemetry+'\n'+roster+'\n'+feed+'\n'+evidence+'\n'+guard+'\n'+route+'\n'+strategy+'\n'+blueprint+'\n'+inventory+'\n'+health+'\n'+hud,context,{timeout:2000});
   const widget=root.FindChildTraverse('DeadlockAIAdvisorRoot');
   assert.ok(widget,'HUD widget exists');
   assert.equal(widget.BHasClass('DAAOpen'),false);
@@ -179,6 +180,44 @@ test('real Panorama script creates a native panel and all controls without a bro
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('Слоты 0/9')));
   press('Слоты 0/9');
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('Слоты 0/10')));
+  press('Код сборки');
+  press('Создать код');
+  const blueprintEntry=descendants(widget).find(p=>p.BHasClass('DAABlueprintInput'));
+  assert.ok(blueprintEntry,'native blueprint TextEntry exists');
+  const exported=blueprintEntry.text;
+  assert.match(exported,/^DAA1:/);
+  press('Копировать');
+  assert.ok(descendants(widget).some(p=>p.type==='Label' &&
+    p.text.includes('Ctrl+C')));
+  press('Проверить код');
+  assert.ok(descendants(widget).some(p=>p.type==='Label' &&
+    p.text.includes('Проверено.')));
+  press('Новый матч');
+  press('Применить код');
+  assert.ok(descendants(widget).some(p=>p.type==='Label' &&
+    p.text.includes('Код изменился или ещё не проверен')));
+  assert.ok(descendants(widget).some(p=>p.type==='Label' &&
+    p.text.includes('Слоты 0/9')));
+  press('Проверить код');
+  press('Применить код');
+  assert.ok(descendants(widget).some(p=>p.type==='Label' &&
+    p.text.includes('Сборка импортирована')));
+  assert.ok(descendants(widget).some(p=>p.type==='Label' &&
+    p.text.includes('Слоты 0/10')));
+  assert.ok(descendants(widget).some(p=>p.type==='Label' &&
+    p.text==='Профиль: Выживание'));
+  assert.ok(descendants(widget).some(p=>p.type==='Label' &&
+    p.text.includes('2400') && p.text.includes('[HUD]')));
+  assert.ok(descendants(widget).some(p=>p.type==='Label' &&
+    p.text.includes('Враги: TestEnemy') && p.text.includes('вручную')));
+  blueprintEntry.text=exported.replace('DAA1:','DAA1:1');
+  blueprintEntry.events.ontextentrychange();
+  press('Проверить код');
+  assert.ok(descendants(widget).some(p=>p.type==='Label' &&
+    p.text.includes('Код отклонён')));
+  press('Применить код');
+  assert.ok(descendants(widget).some(p=>p.type==='Label' &&
+    p.text.includes('Сначала нажмите «Проверить код»')));
   press('Новый матч');
   assert.ok(descendants(widget).some(p=>p.type==='Label' && p.text==='Профиль: Выживание'));
   assert.ok(descendants(widget).some(p=>p.type==='Label'&&p.text.includes('Враги: HUD не определил состав')));

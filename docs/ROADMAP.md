@@ -158,6 +158,26 @@ See docs/INVENTORY_HUD_HEALTH.md.
 
 See docs/STRATEGY_LAB.md.
 
+## v1.0.0 — Build Blueprints (experimental)
+
+- [x] Versioned and bounded portable code containing only player-selected advisory annotations
+- [x] No account identifiers, current currency, hidden telemetry, file paths or external secrets in the code
+- [x] Deterministic checksum to catch accidental corruption (explicitly not cryptographic authentication)
+- [x] Strict current-catalog ID validation for hero, enemies, owned, pinned and enemy-confirmed items
+- [x] Reject duplicates, impossible teams, stale items, slot overflow and owned/pinned conflicts
+- [x] Native Panorama TextEntry to create, inspect and manually copy build codes
+- [x] Optional clipboard API only when runtime exposes it; manual Ctrl+C fallback
+- [x] Two-step preview/confirmation before applying; invalidate preview when input or match changes
+- [x] Revalidate on apply and replace only manual advisor annotations, never actual shop state
+- [x] Import preserves current souls and switches the enemy roster into explicit manual mode
+- [x] Unit, Panorama interaction and VPK fixture integration tests on Windows/Linux CI
+- [ ] Confirm actual TextEntry paste / optional clipboard behavior in a running Deadlock client
+- [ ] Verify whether build sharing is permitted under current Deadlock third-party HUD rules
+- [ ] Verify VPK installation and full live HUD compatibility on user's Windows machine
+- [ ] Integrate real AI inference only after source of trusted game context and transport are validated
+
+See docs/BUILD_BLUEPRINTS.md.
+
 ## Next steps
 
 - Test the latest compiled VPK directly in an actual Deadlock client (Issues #2 and #5)
