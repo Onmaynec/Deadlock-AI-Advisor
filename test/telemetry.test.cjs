@@ -75,3 +75,16 @@ test('diagnostics reads only whitelisted panel existence',()=>{
     inventorySurface:false,scoreboardSurface:false
   });
 });
+
+test('current stock HUD containers are detected only by their real panel IDs',()=>{
+  const h=hudWithCurrency('900').root;
+  h.children.push(panel('TopBar',null,[]));
+  h.children.push(panel('ModPurchasedPanelUniversal',null,[]));
+  const current=diagnostics(h);
+  assert.equal(current.scoreboardSurface,true);
+  assert.equal(current.inventorySurface,true);
+  // Container presence is NOT an item ID, price or even a verified own inventory.
+  h.children=h.children.filter(x=>x.id!=='ModPurchasedPanelUniversal');
+  h.children.push(panel('PlayerModsContainer',null,[]));
+  assert.equal(diagnostics(h).inventorySurface,false);
+});
