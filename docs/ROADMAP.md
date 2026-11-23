@@ -102,6 +102,25 @@ See docs/PURCHASE_INTELLIGENCE.md.
 
 See docs/ECONOMY_ROUTE.md. The read-only doctor is a diagnostic aid, not a substitute for launching the game.
 
+## v0.7.0 — VPK Compatibility & Packaging (experimental)
+
+- [x] Compile the full native Panorama bundle from an offline fake Deadlock installation
+- [x] Verify VPK round trip for HUD layout, styles and script byte for byte
+- [x] Require resource templates with DATA and RED2 blocks
+- [x] Validate stock HUD structure and refuse duplicate injection
+- [x] Bind cache to installed source VPK and downloaded XML SHA-256 checksums
+- [x] Write a build manifest with nonidentifying source/result checksums
+- [x] Stage VPK installs and restore previous own VPK after failed replacement
+- [x] Reject occupied addon slots and untrusted installation-record destinations
+- [x] Extend read-only doctor to detect source/manifest/installed file mismatches
+- [x] Integrate offline full build/install/uninstall regression tests into Windows/Linux CI
+- [ ] Validate real compiled VPK and startup on an actual up-to-date Deadlock Windows client
+- [ ] Verify SteamTracking HUD XML exactly matches installed local game build
+- [ ] Verify actual native Panorama JS/CSS parser support and panel event controls
+- [ ] Verify owner-attributed purchases and permitted runtime neural inference
+
+See docs/VPK_COMPATIBILITY.md.
+
 ## Next steps
 
 - Test the latest compiled VPK directly in an actual Deadlock client (Issues #2 and #5)

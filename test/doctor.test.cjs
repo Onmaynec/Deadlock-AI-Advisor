@@ -80,3 +80,37 @@ test('missing native resources and obsolete catalog are diagnosed',()=>workspace
   assert.ok(codes(report).includes('script-template-missing'));
   assert.ok(codes(report).includes('catalog-stale'));
 }));
+
+test('v0.7 doctor cross-checks manifest and source VPK digest',()=>workspace(args=>{
+  const stock=path.join(args.citadel,'pak01_dir.vpk');
+  const file=path.join(args.out,'pak88_dir.vpk');
+  const digest=p=>crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+  writeVpk(file,[{path:'panorama/layout/hud.vxml_c',data:Buffer.from('hud')}]);
+  const manifest={
+    addonSha256:digest(file),gameVpkSha256:digest(stock),toolVersion:'0.7.0'
+  };
+  const m=path.join(args.out,'build_manifest.json');
+  fs.writeFileSync(m,JSON.stringify(manifest));
+  const before=inspect(Object.assign({gamePath:args.game},args));
+  assert.ok(codes(before).includes('build-manifest-valid'));
+  fs.appendFileSync(file,'CORRUPTED');
+  const after=inspect(Object.assign({gamePath:args.game},args));
+  assert.equal(after.healthy,false);
+  assert.ok(codes(after).includes('build-hash-mismatch'));
+}));
+test('v0.7 doctor warns if installed files target older stock VPK',()=>workspace(args=>{
+  const stock=path.join(args.citadel,'pak01_dir.vpk');
+  const target=path.join(args.citadel,'addons','pak88_dir.vpk');
+  writeVpk(target,[
+    {path:'panorama/layout/hud.vxml_c',data:Buffer.from('x')},
+    {path:'panorama/styles/deadlock_ai_advisor.vcss_c',data:Buffer.from('y')},
+    {path:'panorama/scripts/deadlock_ai_advisor.vts_c',data:Buffer.from('z')}
+  ]);
+  const sha=p=>crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+  fs.writeFileSync(path.join(args.cache,'installed.json'),JSON.stringify({
+    target,sha256:sha(target),sourceVpkSha256:'0'.repeat(64)
+  }));
+  const result=inspect(Object.assign({gamePath:args.game},args));
+  assert.ok(codes(result).includes('installed-stock-changed'));
+  assert.ok(codes(result).includes('installed-hash-ok'));
+}));

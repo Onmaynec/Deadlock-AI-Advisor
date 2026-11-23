@@ -2,7 +2,7 @@
 
 **Native Panorama HUD mod for Deadlock.** The player sees and controls the panel **inside the game**, not in an external window. The distributable is a Source 2 VPK: no DLL injection, process-memory reading or shop automation.
 
-**Status: v0.6.0 / experimental.** The native UI and offline recommendation engine are implemented in source. Live neural inference, automatic inventory/enemy-item tracking and end-to-end game verification are NOT implemented. The game HUD now has an experimental read-only opponent-roster adapter, requiring real-client confirmation. A scoped read-only HUD currency adapter now exists, but its in-game numeric behavior remains unverified. Do not treat this build as a finished AI assistant.
+**Status: v0.7.0 / experimental.** The native UI and offline recommendation engine are implemented in source. Live neural inference, automatic inventory/enemy-item tracking and end-to-end game verification are NOT implemented. The game HUD now has an experimental read-only opponent-roster adapter, requiring real-client confirmation. A scoped read-only HUD currency adapter now exists, but its in-game numeric behavior remains unverified. Do not treat this build as a finished AI assistant.
 
 ## Implemented
 
@@ -19,6 +19,9 @@
 - **Optional offline matchup snapshot:** API historical purchased items when facing selected enemy heroes, precomputed before compiling the VPK.
 - **v0.4 read-only opponent roster:** only the TeamEnemy top-bar panel's HeroName labels are examined; invalid, ambiguous or stale data causes immediate safe fallback. Automatic name mapping requires matching English hero names.
 - **Model-output firewall:** optional future neural suggestions cannot inject unknown item IDs, costs or stale-match context; no model is contacted yet.
+- **v0.7 VPK Compatibility:** end-to-end offline fixture compiles **all HUD modules** into a three-resource VPK, extracts and compares compiled bytes, then tests install, update, rollback and uninstall. Run `npm run test:build`.
+- **v0.7 Game resource safety:** stock Panorama templates must contain expected compiled blocks, HUD XML has structural guards and source cache is SHA-256 bound to the installed stock game VPK. Incompatible or missing resources fail closed.
+- **v0.7 Reproducible diagnostics:** `out/build_manifest.json` contains hashes and script template metadata without personal install paths; `npm run doctor` detects stale/mismatched bundles and base-game updates.
 - **v0.6 Economy Route:** a real in-game button **План на эти души** simulates up to three purchases using **only the player's currently known souls**, with inventory capacity, verified component discounts, pinned-item preference, remaining balances and a separate save-for target. It never predicts future income or buys items automatically.
 - **v0.6 Installation Doctor:** **npm run doctor** audits game files, VPK resource list, catalog age, addon search paths, installation tracking and SHA-256 integrity without modifying anything. Add **-- --json** for machine-readable troubleshooting.
 - **v0.6 Russian item search fix:** in-game item search uses validated Russian aliases as well as English names.
@@ -39,6 +42,7 @@ From the project root run (for an optional matchup-aware snapshot, see the separ
 
 ~~~powershell
 npm run check
+npm run test:build
 npm run sync
 npm run doctor
 npm run install-mod
@@ -48,6 +52,8 @@ npm run doctor
 The install command builds and places a VPK in **game/citadel/addons/pak88_dir.vpk** (or your configured number). It may add safe search paths to **gameinfo.gi**; the original is backed up at **cache/gameinfo.gi.bak**. It refuses to overwrite another mod's VPK.
 
 Open the game shop or press backslash. The panel is part of the in-game HUD. Enemy threat flags and purchased items remain **manual**. Enemy hero names can be detected from existing HUD labels only if the running game exposes those labels; the in-game **Выбрать врагов** selector is always available as fallback. Souls can be read from the named HUD label **only if the installed game exposes evaluated numeric text**; otherwise it stays unknown until manually entered. Select another hero if HUD auto-detection fails.
+
+**v0.7 VPK build safety and offline integration testing:** [VPK Compatibility](docs/VPK_COMPATIBILITY.md).
 
 **v0.6 economy route and Windows installation diagnostics:** [Economy Route & Doctor](docs/ECONOMY_ROUTE.md).
 
@@ -71,9 +77,9 @@ It is **not a neural network**. There is no validated live AI-to-Panorama networ
 - Soul count is probed from a known public HUD label with double-confirmation; real-game evaluation of that label is **unverified**. Owned items, enemy heroes and enemy purchases are still manually tracked or unavailable.
 - Hero priors and optional opponent matchup priors are historical purchase frequencies, **not** item win rates or proven counters. Matchup priors are only available for heroes explicitly precomputed during sync. Optional analytics failures fall back gracefully.
 - Enemy hero and shop purchase label probes are experimental and not verified in the live client. The shop's recent-purchase snippet has no reliable buyer/team identity, so **no feed item is automatically marked as owned by an enemy**. Manual confirmation is required. The player can switch to manual roster selection at any time. Universal inventory slot count is chosen manually and active-item restrictions are unverified.
-- No free LLM is called at runtime. The direct Panorama HTTP request API has been removed in current mod research. A hosted HTTPS browser-panel bridge could be investigated later with explicit consent, but it is not part of v0.5. **No API key is embedded in this VPK.**
+- No free LLM is called at runtime. The direct Panorama HTTP request API has been removed in current mod research. A hosted HTTPS browser-panel bridge could be investigated later with explicit consent, but it is not part of v0.7. **No API key is embedded in this VPK.**
 - A three-purchase route is a **heuristic preview** of how to spend current souls, not an optimal build, an automatic purchase order, or a future-income forecast.
-- The diagnostic tool validates files and checksums, **not** actual mod compatibility with the running Deadlock process.
+- The diagnostic and end-to-end fixture tests validate files and checksums, **not** actual mod compatibility with the running Deadlock process. SteamTracking stock HUD XML is not proven to match the exact installed Deadlock build; rebuild and test after patches.
 - This environment cannot launch Deadlock. Node tests are not a substitute for testing a compiled VPK in a real game session. See [HUD telemetry and the Windows test checklist](docs/HUD_TELEMETRY.md).
 - HUD layout resources conflict with mods that also replace **panorama/layout/hud.vxml_c**. Rebuild after patches.
 
@@ -90,6 +96,7 @@ Valve has not guaranteed that a third-party HUD which gives competitive advice i
 | src/enemy-item-evidence.js | Conservative threat hints from explicitly marked enemy items |
 | src/purchase-route.js | Offline, three-purchase route simulation on currently known souls |
 | tools/doctor.cjs | Read-only Windows installation / VPK / catalog diagnostics |
+| test/build-integration.test.cjs | Network-free full native build/install/uninstall integration tests |
 | src/inference-guard.js | Validation and safe offline fallback for possible future LLM outputs |
 | tools/sync-matchups.cjs | Optional offline historical item-versus-enemy-hero snapshot |
 | src/panorama/ | In-game widget and native CSS |
