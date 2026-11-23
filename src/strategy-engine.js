@@ -41,7 +41,7 @@ var DAA_STRATEGY = (function() {
     } else if(mode==='budget') {
       // Price is a real catalog attribute, but not a measure of item efficiency.
       var price=Math.max(1,Number(row.cost)||1);
-      delta=Math.round(Math.max(0,9-Math.min(9,price/400))*100)/100;
+      delta=Math.round(Math.max(0,12-Math.min(12,price/250))*100)/100;
       if(delta>0)notes.push('профиль отдаёт предпочтение меньшей цене');
       if(budget===null)notes.push('доступность не подтверждена: баланс неизвестен');
     }

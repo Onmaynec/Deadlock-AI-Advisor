@@ -108,7 +108,7 @@ test('profile scores are deterministic, bounded and do not mutate catalog or sta
   for(const p of S.profiles){
     const one=S.rank(catalog,state,p.id,6);
     assert.deepEqual(one,S.rank(catalog,state,p.id,6));
-    assert.ok(one.every(x=>x.strategyBonus>=0&&x.strategyBonus<=9));
+    assert.ok(one.every(x=>x.strategyBonus>=0&&x.strategyBonus<=12));
   }
   assert.equal(JSON.stringify(catalog),c);
   assert.equal(JSON.stringify(state),before);

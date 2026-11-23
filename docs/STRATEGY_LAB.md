@@ -18,7 +18,7 @@ Open the advisor in the Deadlock HUD using the shop or configured shortcut. In t
 | Баланс | Original item ordering using known threats, owned upgrades, affordability and available offline historical purchase counts | No evidence that it is a statistically optimal build |
 | Выживание | +9 score to items classified in the current catalog as \`vitality\` | No guaranteed survivability, damage reduction or win-rate increase |
 | Натиск | +9 to \`weapon\`, +5 to \`spirit\` items | No damage simulation, build synergy proof or counter certainty |
-| Экономия | Bounded 0..9 bonus favoring smaller current item prices | Does not predict farming income or calculate true long-term value |
+| Экономия | Bounded 0..12 bonus favoring smaller current item prices | Does not predict farming income or calculate true long-term value |
 
 The original candidate list is always obtained from \`DAA.recommend()\`. Strategy modifiers cannot turn an item with a missing catalog ID or a full-inventory restriction into a valid candidate. They also **cannot** change an item's real catalog cost, verified component discount, or known/unknown affordability. Player-pinned purchase priorities remain the strongest preference.
 
